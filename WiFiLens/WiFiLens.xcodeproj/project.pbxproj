@@ -38,18 +38,21 @@
 		56818EA68B0747B083E0FDF8 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0470288A92AF41C793DAE70B /* DeviceCapabilities.swift */; };
 		5A390BC860BEB1F0D50DAC76 /* BLEChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E1C6C7FE18D0034F66CD3E /* BLEChannel.swift */; };
 		62A04C6993321BEA64FC8E7D /* SSIDColorHasherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A24CA582895A784C2E6014 /* SSIDColorHasherTests.swift */; };
+		63BB596DECFDBA8763C84656 /* TimelineLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05D236E635B93825959AC92 /* TimelineLocalizationTests.swift */; };
 		63C14F72B35F2CC98430CFA0 /* RoamingModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE94087AFA3CB5A003A5012 /* RoamingModelTests.swift */; };
 		6680C83EB72E9C488E7F7616 /* BandChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC8FED8F49854F4CDFD4DCA /* BandChartView.swift */; };
 		67B6475699ADED9C42E8F7CC /* BLEModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06040A5BF8B6FAF01FFB696 /* BLEModelTests.swift */; };
 		6ACEE4EC462933B7C4320468 /* ChannelBand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4079C5A47F59C655689BCFB8 /* ChannelBand.swift */; };
 		6ECFD8E459A49E4A6FA0FCB0 /* WiFiScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8077FDB57D91D930A13EA2B1 /* WiFiScanner.swift */; };
 		6EE067F9A1CC14BACCA0F3DB /* BLERSSISample.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF8EF1A4D0D355ED657A6 /* BLERSSISample.swift */; };
+		721C59AB6DD7BE47D87FAE98 /* InsightFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C187307EE359A3BC6E25D44 /* InsightFeedbackTests.swift */; };
+		78D748E699F0BD72E8076BBA /* TimelineReportExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2B21285BDCF1A6FD3E42C8 /* TimelineReportExporterTests.swift */; };
 		7E778683F723499D93511520 /* RoamingTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F790DC6E08D43C5BD058D96 /* RoamingTestViewModel.swift */; };
 		847B77DBC638404081A7BFC2 /* RoamingRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8367630A1EDF4515917A144A /* RoamingRecord.swift */; };
 		85C7DEE09D3045078A2ADFF5 /* ExponentialMovingAverage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E1D69278614400AA3B660C /* ExponentialMovingAverage.swift */; };
 		869A4E799B9BF9BB3D1FBCF9 /* RoamingTestViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70E4041B5972D72DD79BF56 /* RoamingTestViewModelTests.swift */; };
+		89080783AC5044B9AB08FBDB /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */; };
 		896F4371837628B3E6454853 /* SignalProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786042C29EF01CE698FEBBF8 /* SignalProcessingTests.swift */; };
-		A2B300000000000000000002 /* SignalHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B300000000000000000001 /* SignalHistoryStoreTests.swift */; };
 		8C78C6A4ACEDAD6EA5CCD90E /* BLETrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38EAECBD60DDB96A1E8D5835 /* BLETrendChartView.swift */; };
 		90CF4B22A68C668A58043390 /* RegulatoryDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07A4C1B8DFCDFBA81A6DFFA /* RegulatoryDatabaseTests.swift */; };
 		90CF4B22A68C668A58043391 /* ExternalLinksTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90CF4B22A68C668A58043392 /* ExternalLinksTests.swift */; };
@@ -75,6 +78,47 @@
 		A1C4E7BA2F0148D3B6E90A22 /* DetailPageMinimumHeightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C4E7B92F0148D3B6E90A21 /* DetailPageMinimumHeightTests.swift */; };
 		A1C4E7BC2F0148D3B6E90A24 /* MainWindowMinimumSizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C4E7BB2F0148D3B6E90A23 /* MainWindowMinimumSizeTests.swift */; };
 		A1C4E7BD2F0148D3B6E90A26 /* DetailPageHorizontalOverflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C4E7BE2F0148D3B6E90A27 /* DetailPageHorizontalOverflowTests.swift */; };
+		A2B300000000000000000002 /* SignalHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B300000000000000000001 /* SignalHistoryStoreTests.swift */; };
+		A3C7A1B2C3D4E5F678900011 /* SpectrumTablePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */; };
+		A3C7A1B2C3D4E5F678900012 /* SpectrumTablePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */; };
+		A3C7A1B2C3D4E5F678900013 /* NetworkTableRowSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */; };
+		A3C7A1B2C3D4E5F678900014 /* NetworkTableRowSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */; };
+		A3C7A1B2C3D4E5F678900015 /* SpectrumTablePanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900003 /* SpectrumTablePanelTests.swift */; };
+		A3C7A1B2C3D4E5F678900016 /* NetworkTableRowSorterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900004 /* NetworkTableRowSorterTests.swift */; };
+		A3C7A1B2C3D4E5F678900017 /* SpectrumBandPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */; };
+		A3C7A1B2C3D4E5F678900018 /* SpectrumBandPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */; };
+		A3C7A1B2C3D4E5F678900019 /* SpectrumTrendPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */; };
+		A3C7A1B2C3D4E5F67890001A /* SpectrumTrendPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */; };
+		A3C7A1B2C3D4E5F67890001B /* SpectrumPanelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */; };
+		A3C7A1B2C3D4E5F67890001C /* SpectrumPanelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */; };
+		A3C7A1B2C3D4E5F67890001D /* SpectrumHeatmapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */; };
+		A3C7A1B2C3D4E5F67890001E /* SpectrumHeatmapPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */; };
+		A3C7A1B2C3D4E5F67890001F /* SpectrumHeatmapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */; };
+		A3C7A1B2C3D4E5F678900020 /* SpectrumHeatmapPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */; };
+		A3C7A1B2C3D4E5F678900021 /* SpectrumHeatmapPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000A /* SpectrumHeatmapPanelTests.swift */; };
+		A3C7A1B2C3D4E5F678900022 /* SpectrumHeatmapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */; };
+		A3C7A1B2C3D4E5F678900023 /* SpectrumHeatmapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */; };
+		A3C7A1B2C3D4E5F678900024 /* SpectrumHeatmapLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000C /* SpectrumHeatmapLayoutTests.swift */; };
+		A3C7A1B2C3D4E5F678900025 /* SpectrumHeatmapActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */; };
+		A3C7A1B2C3D4E5F678900026 /* SpectrumHeatmapActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */; };
+		A3C7A1B2C3D4E5F678900027 /* SpectrumHeatmapRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */; };
+		A3C7A1B2C3D4E5F678900028 /* SpectrumHeatmapRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */; };
+		A3C7A1B2C3D4E5F678900031 /* SpectrumHeatmapFieldGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */; };
+		A3C7A1B2C3D4E5F678900032 /* SpectrumHeatmapFieldGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */; };
+		A3C7A1B2C3D4E5F678900033 /* SpectrumHeatmapFieldGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900034 /* SpectrumHeatmapFieldGeneratorTests.swift */; };
+		A3C7A1B2C3D4E5F678900036 /* SpectrumHeatmapComputeBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900035 /* SpectrumHeatmapComputeBackendTests.swift */; };
+		A3C7A1B2C3D4E5F678900039 /* SpectrumHeatmapComputeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */; };
+		A3C7A1B2C3D4E5F67890003A /* SpectrumHeatmapComputeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */; };
+		A3C7A1B2C3D4E5F67890003C /* SpectrumHeatmapMetalBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890003B /* SpectrumHeatmapMetalBackendTests.swift */; };
+		A3C7A1B2C3D4E5F678900042 /* SpectrumHeatmapMetalBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */; };
+		A3C7A1B2C3D4E5F678900043 /* SpectrumHeatmapMetalBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */; };
+		A3C7A1B2C3D4E5F678900045 /* SpectrumHeatmap.metal in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */; };
+		A3C7A1B2C3D4E5F678900046 /* SpectrumHeatmap.metal in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */; };
+		A3C7A1B2C3D4E5F678900049 /* SpectrumHeatmapRenderWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */; };
+		A3C7A1B2C3D4E5F67890004A /* SpectrumHeatmapRenderWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */; };
+		A3C7A1B2C3D4E5F67890004B /* SpectrumHeatmapRenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */; };
+		A3C7A1B2C3D4E5F67890004C /* SpectrumHeatmapRenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */; };
+		A3C7A1B2C3D4E5F67890004E /* SpectrumHeatmapRenderCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890004D /* SpectrumHeatmapRenderCoordinatorTests.swift */; };
 		A71200010000000000000003 /* WiFiNetworkIdentityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71200010000000000000002 /* WiFiNetworkIdentityPresentation.swift */; };
 		A720C0010000000000000002 /* WiFiConnectionTransitionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A720C0010000000000000001 /* WiFiConnectionTransitionClassifier.swift */; };
 		A952EA4DBE85899D61989DF9 /* SSIDColorHasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD8F4CBC15819F4DB5C5510 /* SSIDColorHasher.swift */; };
@@ -83,6 +127,7 @@
 		ADB001000000000000000004 /* DebugMultiAPScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB001000000000000000003 /* DebugMultiAPScenario.swift */; };
 		ADB001000000000000000005 /* DebugMultiAPScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB001000000000000000003 /* DebugMultiAPScenario.swift */; };
 		AE2E0FE2DE426DF20D3CDBC1 /* BLEScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D7CF00F0FEAA84B6E2F64C9 /* BLEScannerView.swift */; };
+		AF84035B0DCA4AA6B6FF8A98 /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */; };
 		AR0000000000000000000011 /* APRadarState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AR0000000000000000000001 /* APRadarState.swift */; };
 		AR0000000000000000000012 /* APRadarSignalProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AR0000000000000000000002 /* APRadarSignalProcessor.swift */; };
 		AR0000000000000000000013 /* APRadarAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AR0000000000000000000003 /* APRadarAudioPlayer.swift */; };
@@ -113,11 +158,13 @@
 		C1E94A4D89C952711DBDB34E /* ColorExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53CD49099277F06E8FB3E04D /* ColorExtensionTests.swift */; };
 		C477C7396F754B85A69816B6 /* KalmanFilter1D.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F90F78BD04526AE0566CC /* KalmanFilter1D.swift */; };
 		C7E5A90CB7E5498F80CDA217 /* GlassBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E84926DD82E4B90B6509CD8 /* GlassBackground.swift */; };
+		C880D0DCE01E479889ABBB33 /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */; };
 		CA0AC8EDAF744A1CB744F092 /* GlassBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E84926DD82E4B90B6509CD8 /* GlassBackground.swift */; };
 		CC0000000000000000000002 /* DebugTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000001 /* DebugTimelineView.swift */; };
 		CC0000000000000000000011 /* TimelineFilterPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000010 /* TimelineFilterPanel.swift */; };
 		D661CA0D0AE39DCBD4B91D38 /* BLEScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55DE3CF5A0CF1AE0ADFECAE1 /* BLEScanner.swift */; };
 		DA7DEF71C1E8ED4068EB7D66 /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74387CFA1E33037E9F1888E /* ScannerViewModel.swift */; };
+		DBDF66D03BD11B7D5986B87F /* SeverityValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAB8408E6A12E8F18E4C2CF7 /* SeverityValidationTests.swift */; };
 		DCAC1361D1814E4895FD4B4F /* HysteresisEMA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A62377C8474773A0ACA7CD /* HysteresisEMA.swift */; };
 		DE564B93CC7C550958EDF3D5 /* BLEAdvertisementEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABE1ECDC700E5809F5B7FF4 /* BLEAdvertisementEvent.swift */; };
 		DFB84AA1AE224EE57DFCBB16 /* RegulatoryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DB542909E9B4730B02260F1 /* RegulatoryModelTests.swift */; };
@@ -127,47 +174,8 @@
 		E4A2B3C4D5E6F708112233AB /* BandPanelSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A2B3C4D5E6F708112233AA /* BandPanelSelectionTests.swift */; };
 		E4A2B3C4D5E6F708112233AC /* BandPanelSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A2B3C4D5E6F708112233AD /* BandPanelSelection.swift */; };
 		E4A2B3C4D5E6F708112233AE /* SpectrumPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A2B3C4D5E6F708112233AF /* SpectrumPanelView.swift */; };
-		A3C7A1B2C3D4E5F678900011 /* SpectrumTablePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */; };
-		A3C7A1B2C3D4E5F678900013 /* NetworkTableRowSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */; };
-		A3C7A1B2C3D4E5F678900015 /* SpectrumTablePanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900003 /* SpectrumTablePanelTests.swift */; };
-		A3C7A1B2C3D4E5F678900016 /* NetworkTableRowSorterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900004 /* NetworkTableRowSorterTests.swift */; };
-		A3C7A1B2C3D4E5F678900021 /* SpectrumHeatmapPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000A /* SpectrumHeatmapPanelTests.swift */; };
-		A3C7A1B2C3D4E5F678900022 /* SpectrumHeatmapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */; };
-		A3C7A1B2C3D4E5F678900023 /* SpectrumHeatmapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */; };
-		A3C7A1B2C3D4E5F678900024 /* SpectrumHeatmapLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000C /* SpectrumHeatmapLayoutTests.swift */; };
-		A3C7A1B2C3D4E5F678900025 /* SpectrumHeatmapActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */; };
-		A3C7A1B2C3D4E5F678900026 /* SpectrumHeatmapActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */; };
-		A3C7A1B2C3D4E5F678900027 /* SpectrumHeatmapRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */; };
-		A3C7A1B2C3D4E5F678900028 /* SpectrumHeatmapRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */; };
-		A3C7A1B2C3D4E5F678900012 /* SpectrumTablePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */; };
-		A3C7A1B2C3D4E5F678900014 /* NetworkTableRowSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */; };
-		A3C7A1B2C3D4E5F678900017 /* SpectrumBandPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */; };
-		A3C7A1B2C3D4E5F678900018 /* SpectrumBandPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */; };
-		A3C7A1B2C3D4E5F678900019 /* SpectrumTrendPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */; };
-		A3C7A1B2C3D4E5F67890001A /* SpectrumTrendPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */; };
-		A3C7A1B2C3D4E5F67890001B /* SpectrumPanelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */; };
-		A3C7A1B2C3D4E5F67890001C /* SpectrumPanelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */; };
-		A3C7A1B2C3D4E5F67890001D /* SpectrumHeatmapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */; };
-		A3C7A1B2C3D4E5F67890001E /* SpectrumHeatmapPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */; };
-		A3C7A1B2C3D4E5F67890001F /* SpectrumHeatmapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */; };
-		A3C7A1B2C3D4E5F678900020 /* SpectrumHeatmapPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */; };
-		A3C7A1B2C3D4E5F678900031 /* SpectrumHeatmapFieldGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */; };
-		A3C7A1B2C3D4E5F678900032 /* SpectrumHeatmapFieldGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */; };
-		A3C7A1B2C3D4E5F678900033 /* SpectrumHeatmapFieldGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900034 /* SpectrumHeatmapFieldGeneratorTests.swift */; };
-		A3C7A1B2C3D4E5F678900036 /* SpectrumHeatmapComputeBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900035 /* SpectrumHeatmapComputeBackendTests.swift */; };
-		A3C7A1B2C3D4E5F67890003C /* SpectrumHeatmapMetalBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890003B /* SpectrumHeatmapMetalBackendTests.swift */; };
-		A3C7A1B2C3D4E5F678900039 /* SpectrumHeatmapComputeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */; };
-		A3C7A1B2C3D4E5F67890003A /* SpectrumHeatmapComputeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */; };
-		A3C7A1B2C3D4E5F678900042 /* SpectrumHeatmapMetalBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */; };
-		A3C7A1B2C3D4E5F678900043 /* SpectrumHeatmapMetalBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */; };
-		A3C7A1B2C3D4E5F678900045 /* SpectrumHeatmap.metal in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */; };
-		A3C7A1B2C3D4E5F678900046 /* SpectrumHeatmap.metal in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */; };
-		A3C7A1B2C3D4E5F678900049 /* SpectrumHeatmapRenderWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */; };
-		A3C7A1B2C3D4E5F67890004A /* SpectrumHeatmapRenderWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */; };
-		A3C7A1B2C3D4E5F67890004B /* SpectrumHeatmapRenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */; };
-		A3C7A1B2C3D4E5F67890004C /* SpectrumHeatmapRenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */; };
-		A3C7A1B2C3D4E5F67890004E /* SpectrumHeatmapRenderCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C7A1B2C3D4E5F67890004D /* SpectrumHeatmapRenderCoordinatorTests.swift */; };
 		E4A2B3C4D5E6F708112233B1 /* SpectrumPanelViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A2B3C4D5E6F708112233B0 /* SpectrumPanelViewTests.swift */; };
+		E8A1B534D16CB1175560A807 /* TimelineReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0724F9D8C687C53E378D13E2 /* TimelineReportExporter.swift */; };
 		EA1000000000000000000002 /* AnalysisScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1000000000000000000001 /* AnalysisScopeTests.swift */; };
 		EA1000000000000000000004 /* AnalysisScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1000000000000000000003 /* AnalysisScope.swift */; };
 		EB2000000000000000000002 /* AnalysisSchemaV3MigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2000000000000000000001 /* AnalysisSchemaV3MigrationTests.swift */; };
@@ -198,11 +206,6 @@
 		EC20000000000000000000024 /* ProReviewRequestBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC20000000000000000000023 /* ProReviewRequestBridge.swift */; };
 		EC20000000000000000000026 /* FeedbackContact.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC20000000000000000000025 /* FeedbackContact.swift */; };
 		EC20000000000000000000028 /* DemoAnalysisData.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC20000000000000000000027 /* DemoAnalysisData.swift */; };
-		E8A1B534D16CB1175560A807 /* TimelineReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0724F9D8C687C53E378D13E2 /* TimelineReportExporter.swift */; };
-		78D748E699F0BD72E8076BBA /* TimelineReportExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2B21285BDCF1A6FD3E42C8 /* TimelineReportExporterTests.swift */; };
-		721C59AB6DD7BE47D87FAE98 /* InsightFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C187307EE359A3BC6E25D44 /* InsightFeedbackTests.swift */; };
-		DBDF66D03BD11B7D5986B87F /* SeverityValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAB8408E6A12E8F18E4C2CF7 /* SeverityValidationTests.swift */; };
-		63BB596DECFDBA8763C84656 /* TimelineLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05D236E635B93825959AC92 /* TimelineLocalizationTests.swift */; };
 		ECCBBEBFAF59A2E2035CE1FF /* BLEViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7BA76DD3B1E6198BDAEEA7 /* BLEViewModel.swift */; };
 		ED1000000000000000000002 /* AnalysisSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1000000000000000000001 /* AnalysisSnapshotTests.swift */; };
 		ED1000000000000000000004 /* AnalysisSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1000000000000000000003 /* AnalysisSnapshot.swift */; };
@@ -213,6 +216,7 @@
 		EEF6495F8D90DE97D0C86ADF /* ChartViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7A45AB88716DC3AC18610B /* ChartViewTests.swift */; };
 		EF1000000000000000000002 /* InsightModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1000000000000000000001 /* InsightModelTests.swift */; };
 		EF2000000000000000000002 /* InsightRuleValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF2000000000000000000001 /* InsightRuleValidationTests.swift */; };
+		F41359FB4F8247C480001F55 /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */; };
 		FABE49BBA198BBD12DD618F2 /* DeviceCompatibilityFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3053495094BB40125310557F /* DeviceCompatibilityFilterTests.swift */; };
 		FB0573AD2FBB54ED005F8214 /* SignalHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0573AC2FBB54ED005F8214 /* SignalHistoryStore.swift */; };
 		FB0573AF2FBB5BD6005F8214 /* NetworkSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0573AE2FBB5BD6005F8214 /* NetworkSnapshot.swift */; };
@@ -315,6 +319,8 @@
 		FB1E32D02FC7316C009D1BDC /* RecommendationReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0573D32FBD0001005F8217 /* RecommendationReason.swift */; };
 		FB1E32D12FC7316C009D1BDC /* RecommendationReasonCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0573D42FBD0001005F8218 /* RecommendationReasonCalculator.swift */; };
 		FB1E32D22FC7316C009D1BDC /* ReasonPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0573D52FBD0001005F8219 /* ReasonPopover.swift */; };
+		FB23154B304D9B6400619D14 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FB23154A304D9B6300619D14 /* InfoPlist.xcstrings */; };
+		FB23154C304D9B6400619D14 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FB23154A304D9B6300619D14 /* InfoPlist.xcstrings */; };
 		FB2E3B2E2FC5ACDA00D2610E /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB2E3B2D2FC5ACDA00D2610E /* CoreBluetooth.framework */; };
 		FB69776630414AD400F9B20E /* WhatsNewStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB69776430414AD400F9B20E /* WhatsNewStateStore.swift */; };
 		FB69776730414AD400F9B20E /* WhatsNewSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB69776330414AD400F9B20E /* WhatsNewSheetView.swift */; };
@@ -322,10 +328,6 @@
 		FB69776930414AD400F9B20E /* WhatsNewStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB69776430414AD400F9B20E /* WhatsNewStateStore.swift */; };
 		FB69776A30414AD400F9B20E /* WhatsNewSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB69776330414AD400F9B20E /* WhatsNewSheetView.swift */; };
 		FB69776B30414AD400F9B20E /* WhatsNewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB69776230414AD400F9B20E /* WhatsNewCoordinator.swift */; };
-		C880D0DCE01E479889ABBB33 /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */; };
-		89080783AC5044B9AB08FBDB /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */; };
-		AF84035B0DCA4AA6B6FF8A98 /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */; };
-		F41359FB4F8247C480001F55 /* MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */; };
 		FB6F41CC2FC4889B0009F29B /* RegulatoryDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6F41C92FC4889B0009F29B /* RegulatoryDomain.swift */; };
 		FB6F41CD2FC4889B0009F29B /* RegulatoryDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6F41C82FC4889B0009F29B /* RegulatoryDatabase.swift */; };
 		FB6F41CE2FC4889B0009F29B /* ChannelRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6F41C52FC4889B0009F29B /* ChannelRecommendation.swift */; };
@@ -574,9 +576,12 @@
 /* Begin PBXFileReference section */
 		01A62377C8474773A0ACA7CD /* HysteresisEMA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HysteresisEMA.swift; sourceTree = "<group>"; };
 		0470288A92AF41C793DAE70B /* DeviceCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilities.swift; sourceTree = "<group>"; };
+		0724F9D8C687C53E378D13E2 /* TimelineReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineReportExporter.swift; sourceTree = "<group>"; };
 		08D4F1A65F0142A18B9C161 /* LoggingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingTests.swift; sourceTree = "<group>"; };
 		1067F6AA96EC6320C6472F59 /* CoreWLAN.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreWLAN.framework; path = System/Library/Frameworks/CoreWLAN.framework; sourceTree = SDKROOT; };
+		1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		1BA4E8568B0D4661E9B9E71E /* ChannelSpanCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSpanCalculator.swift; sourceTree = "<group>"; };
+		1D2B21285BDCF1A6FD3E42C8 /* TimelineReportExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineReportExporterTests.swift; sourceTree = "<group>"; };
 		1D7CF00F0FEAA84B6E2F64C9 /* BLEScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScannerView.swift; sourceTree = "<group>"; };
 		28A3299502DE1A130760C8A7 /* NativeTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTableView.swift; sourceTree = "<group>"; };
 		2D296EB5CEF7484BA599C2F9 /* BLEDeviceTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEDeviceTracker.swift; sourceTree = "<group>"; };
@@ -597,8 +602,10 @@
 		51DDD97F3B94514DE0790B51 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		53CD49099277F06E8FB3E04D /* ColorExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensionTests.swift; sourceTree = "<group>"; };
 		55DE3CF5A0CF1AE0ADFECAE1 /* BLEScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScanner.swift; sourceTree = "<group>"; };
+		56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
 		58FF378E09090DEBAAFA77F6 /* BandChartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BandChartViewModel.swift; sourceTree = "<group>"; };
 		5BCB49F38A652E6A07BD027F /* ChannelQualityCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelQualityCalculatorTests.swift; sourceTree = "<group>"; };
+		5C187307EE359A3BC6E25D44 /* InsightFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightFeedbackTests.swift; sourceTree = "<group>"; };
 		5CE94087AFA3CB5A003A5012 /* RoamingModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamingModelTests.swift; sourceTree = "<group>"; };
 		5DD34695BFD8D4277DF0BDB0 /* SpectrumModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumModelTests.swift; sourceTree = "<group>"; };
 		6203A2551742DF77D61785FE /* WiFiChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiChannel.swift; sourceTree = "<group>"; };
@@ -630,6 +637,31 @@
 		A1C4E7B92F0148D3B6E90A21 /* DetailPageMinimumHeightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailPageMinimumHeightTests.swift; sourceTree = "<group>"; };
 		A1C4E7BB2F0148D3B6E90A23 /* MainWindowMinimumSizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowMinimumSizeTests.swift; sourceTree = "<group>"; };
 		A1C4E7BE2F0148D3B6E90A27 /* DetailPageHorizontalOverflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailPageHorizontalOverflowTests.swift; sourceTree = "<group>"; };
+		A2B300000000000000000001 /* SignalHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHistoryStoreTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTablePanel.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTableRowSorter.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900003 /* SpectrumTablePanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTablePanelTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900004 /* NetworkTableRowSorterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTableRowSorterTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumBandPanel.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTrendPanel.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumPanelContainer.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapModel.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapPanel.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890000A /* SpectrumHeatmapPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapPanelTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapLayout.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890000C /* SpectrumHeatmapLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapLayoutTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapActivity.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRasterizer.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapFieldGenerator.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900034 /* SpectrumHeatmapFieldGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapFieldGeneratorTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900035 /* SpectrumHeatmapComputeBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapComputeBackendTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapComputeBackend.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890003B /* SpectrumHeatmapMetalBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapMetalBackendTests.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapMetalBackend.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SpectrumHeatmap.metal; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderWorker.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderCoordinator.swift; sourceTree = "<group>"; };
+		A3C7A1B2C3D4E5F67890004D /* SpectrumHeatmapRenderCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderCoordinatorTests.swift; sourceTree = "<group>"; };
 		A5024CBB8BFCAFF56FEF0756 /* MCPServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPServerTests.swift; sourceTree = "<group>"; };
 		A71200010000000000000002 /* WiFiNetworkIdentityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiNetworkIdentityPresentation.swift; sourceTree = "<group>"; };
 		A720C0010000000000000001 /* WiFiConnectionTransitionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiConnectionTransitionClassifier.swift; sourceTree = "<group>"; };
@@ -646,6 +678,7 @@
 		AR0000000000000000000009 /* APRadarSignalProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APRadarSignalProcessorTests.swift; sourceTree = "<group>"; };
 		AR000000000000000000000A /* APRadarViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APRadarViewModelTests.swift; sourceTree = "<group>"; };
 		AR000000000000000000000C /* APRadarSoundSynthesizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APRadarSoundSynthesizerTests.swift; sourceTree = "<group>"; };
+		B05D236E635B93825959AC92 /* TimelineLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineLocalizationTests.swift; sourceTree = "<group>"; };
 		B06040A5BF8B6FAF01FFB696 /* BLEModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEModelTests.swift; sourceTree = "<group>"; };
 		B13DBF938D654926B205302C /* RoamingTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamingTestView.swift; sourceTree = "<group>"; };
 		B1E1C6C7FE18D0034F66CD3E /* BLEChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEChannel.swift; sourceTree = "<group>"; };
@@ -678,31 +711,6 @@
 		E4A2B3C4D5E6F708112233AD /* BandPanelSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BandPanelSelection.swift; sourceTree = "<group>"; };
 		E4A2B3C4D5E6F708112233AF /* SpectrumPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumPanelView.swift; sourceTree = "<group>"; };
 		E4A2B3C4D5E6F708112233B0 /* SpectrumPanelViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumPanelViewTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900001 /* SpectrumTablePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTablePanel.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900002 /* NetworkTableRowSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTableRowSorter.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900003 /* SpectrumTablePanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTablePanelTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900004 /* NetworkTableRowSorterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTableRowSorterTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890000A /* SpectrumHeatmapPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapPanelTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890000B /* SpectrumHeatmapLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapLayout.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890000C /* SpectrumHeatmapLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapLayoutTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890000D /* SpectrumHeatmapActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapActivity.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890000E /* SpectrumHeatmapRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRasterizer.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900030 /* SpectrumHeatmapFieldGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapFieldGenerator.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900034 /* SpectrumHeatmapFieldGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapFieldGeneratorTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900035 /* SpectrumHeatmapComputeBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapComputeBackendTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890003B /* SpectrumHeatmapMetalBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapMetalBackendTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900038 /* SpectrumHeatmapComputeBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapComputeBackend.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900041 /* SpectrumHeatmapMetalBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapMetalBackend.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900044 /* SpectrumHeatmap.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SpectrumHeatmap.metal; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900047 /* SpectrumHeatmapRenderWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderWorker.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900048 /* SpectrumHeatmapRenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderCoordinator.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F67890004D /* SpectrumHeatmapRenderCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapRenderCoordinatorTests.swift; sourceTree = "<group>"; };
-		A2B300000000000000000001 /* SignalHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHistoryStoreTests.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900005 /* SpectrumBandPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumBandPanel.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900006 /* SpectrumTrendPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumTrendPanel.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900007 /* SpectrumPanelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumPanelContainer.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900008 /* SpectrumHeatmapModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapModel.swift; sourceTree = "<group>"; };
-		A3C7A1B2C3D4E5F678900009 /* SpectrumHeatmapPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectrumHeatmapPanel.swift; sourceTree = "<group>"; };
 		E5A1B3C8D4F6123456780001 /* WiFiPowerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiPowerMonitor.swift; sourceTree = "<group>"; };
 		E83547C1A36ADDD9E827B26A /* ChartUtilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartUtilityTests.swift; sourceTree = "<group>"; };
 		EA1000000000000000000001 /* AnalysisScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisScopeTests.swift; sourceTree = "<group>"; };
@@ -732,11 +740,6 @@
 		EC20000000000000000000023 /* ProReviewRequestBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProReviewRequestBridge.swift; sourceTree = "<group>"; };
 		EC20000000000000000000025 /* FeedbackContact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackContact.swift; sourceTree = "<group>"; };
 		EC20000000000000000000027 /* DemoAnalysisData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoAnalysisData.swift; sourceTree = "<group>"; };
-		0724F9D8C687C53E378D13E2 /* TimelineReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineReportExporter.swift; sourceTree = "<group>"; };
-		1D2B21285BDCF1A6FD3E42C8 /* TimelineReportExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineReportExporterTests.swift; sourceTree = "<group>"; };
-		5C187307EE359A3BC6E25D44 /* InsightFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightFeedbackTests.swift; sourceTree = "<group>"; };
-		FAB8408E6A12E8F18E4C2CF7 /* SeverityValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeverityValidationTests.swift; sourceTree = "<group>"; };
-		B05D236E635B93825959AC92 /* TimelineLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineLocalizationTests.swift; sourceTree = "<group>"; };
 		ED1000000000000000000001 /* AnalysisSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisSnapshotTests.swift; sourceTree = "<group>"; };
 		ED1000000000000000000003 /* AnalysisSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisSnapshot.swift; sourceTree = "<group>"; };
 		ED2000000000000000000001 /* AnalysisNetworkScopeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisNetworkScopeIntegrationTests.swift; sourceTree = "<group>"; };
@@ -747,6 +750,7 @@
 		EF1000000000000000000001 /* InsightModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightModelTests.swift; sourceTree = "<group>"; };
 		EF2000000000000000000001 /* InsightRuleValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightRuleValidationTests.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A64987FEDCBA01 /* RoamingSessionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamingSessionRecord.swift; sourceTree = "<group>"; };
+		FAB8408E6A12E8F18E4C2CF7 /* SeverityValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeverityValidationTests.swift; sourceTree = "<group>"; };
 		FABE1ECDC700E5809F5B7FF4 /* BLEAdvertisementEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEAdvertisementEvent.swift; sourceTree = "<group>"; };
 		FB0573AC2FBB54ED005F8214 /* SignalHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHistoryStore.swift; sourceTree = "<group>"; };
 		FB0573AE2FBB5BD6005F8214 /* NetworkSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSnapshot.swift; sourceTree = "<group>"; };
@@ -768,13 +772,12 @@
 		FB0573E02FBD0002005F9001 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		FB05A7A02FD1A0F100B5C801 /* WindowFramePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFramePolicy.swift; sourceTree = "<group>"; };
 		FB1E32A42FC7316C009D1BDC /* WiFi Lens Pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WiFi Lens Pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB23154A304D9B6300619D14 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FB2E3B2D2FC5ACDA00D2610E /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		FB5A212C2FC31C6100828D9F /* WiFiLens-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "WiFiLens-Info.plist"; sourceTree = "<group>"; };
 		FB69776230414AD400F9B20E /* WhatsNewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewCoordinator.swift; sourceTree = "<group>"; };
 		FB69776330414AD400F9B20E /* WhatsNewSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewSheetView.swift; sourceTree = "<group>"; };
 		FB69776430414AD400F9B20E /* WhatsNewStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewStateStore.swift; sourceTree = "<group>"; };
-		56E33CAFE9F74C4A8BF1DCE2 /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
-		1AA63D2757304B7D80BB161A /* MarkdownTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextView.swift; sourceTree = "<group>"; };
 		FB6F41C52FC4889B0009F29B /* ChannelRecommendation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelRecommendation.swift; sourceTree = "<group>"; };
 		FB6F41C62FC4889B0009F29B /* DeviceCompatibilityFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCompatibilityFilter.swift; sourceTree = "<group>"; };
 		FB6F41C72FC4889B0009F29B /* RegionInferenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionInferenceEngine.swift; sourceTree = "<group>"; };
@@ -1004,6 +1007,14 @@
 				6D81AD175FCC46C43BC613A7 /* Frameworks */,
 				BD4D8FFAAD7E961D9EE4F5FE /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		248807E6B493421280DF87A4 /* WhatsNew */ = {
+			isa = PBXGroup;
+			children = (
+				G900000000000000000000F1 /* WhatsNewCoordinatorTests.swift */,
+			);
+			path = WhatsNew;
 			sourceTree = "<group>";
 		};
 		2BB8E28CC6CC66A93DA47095 /* Sources */ = {
@@ -1376,6 +1387,7 @@
 			children = (
 				FB69774D30414A6F00F9B20E /* WhatsNew */,
 				FBBD169B2FD063630093F940 /* Assets.xcassets */,
+				FB23154A304D9B6300619D14 /* InfoPlist.xcstrings */,
 				A1C0DE0000000000000000F1 /* WiFi Lens.icon */,
 				FBBD16982FD062F60093F940 /* PrivacyInfo.xcprivacy */,
 				FBB1F0AB2FC61E3D00E9D2C6 /* Localizable.xcstrings */,
@@ -1625,14 +1637,6 @@
 				G900000000000000000000E7 /* GuidanceDebug.swift */,
 			);
 			path = Guidance;
-			sourceTree = "<group>";
-		};
-		248807E6B493421280DF87A4 /* WhatsNew */ = {
-			isa = PBXGroup;
-			children = (
-				G900000000000000000000F1 /* WhatsNewCoordinatorTests.swift */,
-			);
-			path = WhatsNew;
 			sourceTree = "<group>";
 		};
 		G900000000000000000000CB /* Guidance */ = {
@@ -1999,6 +2003,7 @@
 				FBBD169A2FD062F60093F940 /* PrivacyInfo.xcprivacy in Resources */,
 				FBBD169D2FD063630093F940 /* Assets.xcassets in Resources */,
 				FB1E329D2FC7316C009D1BDC /* Localizable.xcstrings in Resources */,
+				FB23154B304D9B6400619D14 /* InfoPlist.xcstrings in Resources */,
 				MV0000000000000000000051 /* mac-vendor-database.json in Resources */,
 				A1C0DE0000000000000000F3 /* WiFi Lens.icon in Resources */,
 			);
@@ -2011,6 +2016,7 @@
 				FBBD16992FD062F60093F940 /* PrivacyInfo.xcprivacy in Resources */,
 				FBBD169C2FD063630093F940 /* Assets.xcassets in Resources */,
 				FBB1F0AC2FC61E3D00E9D2C6 /* Localizable.xcstrings in Resources */,
+				FB23154C304D9B6400619D14 /* InfoPlist.xcstrings in Resources */,
 				MV0000000000000000000049 /* mac-vendor-database.json in Resources */,
 				A1C0DE0000000000000000F2 /* WiFi Lens.icon in Resources */,
 			);
