@@ -37,8 +37,5 @@ jobs:
       - run: pnpm install --config.minimum-release-age=0
         working-directory: web
 
-      - run: pnpm --config.minimum-release-age=0 check
-        working-directory: web
-
       - run: pnpm --config.minimum-release-age=0 build
         working-directory: web

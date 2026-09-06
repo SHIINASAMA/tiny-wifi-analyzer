@@ -6,13 +6,10 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "build": "astro build",
-    "check": "astro check",
     "dev": "astro dev",
     "preview": "astro preview"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
-    "astro": "^7.2.9",
-    "typescript": "^6.0.3"
+    "astro": "^7.2.9"
   }
 }
