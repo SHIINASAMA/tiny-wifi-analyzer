@@ -42,16 +42,6 @@
       },
       "shouldTranslate": false
     },
-    "%@ · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@"
-          }
-        }
-      }
-    },
     "%@ %@": {
       "localizations": {
         "de": {
@@ -9131,6 +9121,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "MNC"
+          }
+        }
+      }
+    },
+    "carrier.preset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预设"
           }
         }
       }
@@ -42112,6 +42119,176 @@
         }
       }
     },
+    "wifi_calling.discovery_miss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No standard ePDG record found for this carrier, so nothing was probed. This does not mean the network or carrier blocks Wi-Fi Calling."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到该运营商的标准 ePDG 域名记录，因此未发起探测。这不表示该网络或运营商不支持 Wi-Fi Calling。"
+          }
+        }
+      }
+    },
+    "wifi_calling.evidence.dns_a": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS A (IPv4)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS A（IPv4）"
+          }
+        }
+      }
+    },
+    "wifi_calling.evidence.dns_aaaa": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS AAAA (IPv6)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS AAAA（IPv6）"
+          }
+        }
+      }
+    },
+    "wifi_calling.evidence.fqdn": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carrier gateway FQDN"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运营商网关域名"
+          }
+        }
+      }
+    },
+    "wifi_calling.evidence.nat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAT detection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAT 检测"
+          }
+        }
+      }
+    },
+    "wifi_calling.evidence.path": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络路径"
+          }
+        }
+      }
+    },
+    "wifi_calling.group.discovery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discovery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现"
+          }
+        }
+      }
+    },
+    "wifi_calling.group.ike": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IKE access"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IKE 访问"
+          }
+        }
+      }
+    },
+    "wifi_calling.group.nat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAT"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAT"
+          }
+        }
+      }
+    },
+    "wifi_calling.group.path": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径"
+          }
+        }
+      }
+    },
     "wifi_calling.invalid_input": {
       "extractionState": "manual",
       "localizations": {
@@ -42125,6 +42302,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "请输入有效的 MCC 与 MNC。"
+          }
+        }
+      }
+    },
+    "wifi_calling.nat.detected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NAT detected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检测到 NAT"
+          }
+        }
+      }
+    },
+    "wifi_calling.nat.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No NAT"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无 NAT"
+          }
+        }
+      }
+    },
+    "wifi_calling.nat.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        }
+      }
+    },
+    "wifi_calling.path.non_wifi": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Wi-Fi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非 Wi-Fi"
+          }
+        }
+      }
+    },
+    "wifi_calling.path.wifi": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi"
           }
         }
       }
@@ -42163,6 +42425,159 @@
         }
       }
     },
+    "wifi_calling.state.checking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检测中…"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.host_not_found": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Domain not found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "域名不存在"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.no_record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无记录"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.no_response": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No response"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无响应"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.not_tested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not tested"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未测试"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.resolved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld address(es)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个地址"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.resolver_failure": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolver failure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解析失败"
+          }
+        }
+      }
+    },
+    "wifi_calling.state.waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待检测"
+          }
+        }
+      }
+    },
     "wifi_calling.summary.gateway_responded": {
       "extractionState": "manual",
       "localizations": {
@@ -42176,6 +42591,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "网关已响应"
+          }
+        }
+      }
+    },
+    "wifi_calling.summary.gateway_responded_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac received an IKE response from the selected carrier gateway over this network path."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Mac 通过该网络路径收到了所选运营商网关的 IKE 响应。"
           }
         }
       }
@@ -42197,6 +42629,23 @@
         }
       }
     },
+    "wifi_calling.summary.inconclusive_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough evidence to conclude — discovery or results were incomplete."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "证据不足以判断——发现或结果不完整。"
+          }
+        }
+      }
+    },
     "wifi_calling.summary.no_response": {
       "extractionState": "manual",
       "localizations": {
@@ -42214,6 +42663,23 @@
         }
       }
     },
+    "wifi_calling.summary.no_response_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No IKE response observed. This does not necessarily mean the network or carrier blocks Wi-Fi Calling."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未观察到 IKE 响应。这不表示该网络或运营商封锁了 Wi-Fi Calling。"
+          }
+        }
+      }
+    },
     "wifi_calling.summary.test_unavailable": {
       "extractionState": "manual",
       "localizations": {
@@ -42227,6 +42693,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法测试"
+          }
+        }
+      }
+    },
+    "wifi_calling.summary.test_unavailable_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No usable Wi-Fi path to test, or the run was cancelled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可测的 Wi-Fi 路径，或检测已取消。"
           }
         }
       }
@@ -43617,189 +44100,121 @@
         }
       }
     },
-    "wifi_calling.evidence.fqdn": {
+    "wifi_calling.log.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Carrier gateway FQDN"
+            "value": "Detection log"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "运营商网关域名"
+            "value": "检测日志"
           }
         }
       }
     },
-    "wifi_calling.evidence.dns_a": {
+    "wifi_calling.log.clear": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DNS A (IPv4)"
+            "value": "Clear"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "DNS A（IPv4）"
+            "value": "清空"
           }
         }
       }
     },
-    "wifi_calling.evidence.dns_aaaa": {
+    "wifi_calling.log.expand": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "DNS AAAA (IPv6)"
+            "value": "Expand"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "DNS AAAA（IPv6）"
+            "value": "展开"
           }
         }
       }
     },
-    "wifi_calling.evidence.path": {
+    "wifi_calling.log.collapse": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Network path"
+            "value": "Collapse"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "网络路径"
+            "value": "收起"
           }
         }
       }
     },
-    "wifi_calling.state.resolved": {
+    "wifi_calling.status.ready": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld address(es)"
+            "value": "Ready — select a carrier and run the check"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld 个地址"
+            "value": "就绪 — 选择运营商后开始检测"
           }
         }
       }
     },
-    "wifi_calling.state.no_record": {
+    "carrier.choose": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No record"
+            "value": "Select carrier"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无记录"
+            "value": "选择运营商"
           }
         }
       }
     },
-    "wifi_calling.state.host_not_found": {
+    "region.mainland_china": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Domain not found"
+            "value": "China"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "域名不存在"
-          }
-        }
-      }
-    },
-    "wifi_calling.state.resolver_failure": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resolver failure"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "解析失败"
-          }
-        }
-      }
-    },
-    "wifi_calling.path.wifi": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wi-Fi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wi-Fi"
-          }
-        }
-      }
-    },
-    "wifi_calling.path.non_wifi": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not Wi-Fi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "非 Wi-Fi"
-          }
-        }
-      }
-    },
-    "wifi_calling.discovery_miss": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No standard ePDG record found for this carrier, so nothing was probed. This does not mean the network or carrier blocks Wi-Fi Calling."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未找到该运营商的标准 ePDG 域名记录，因此未发起探测。这不表示该网络或运营商不支持 Wi-Fi Calling。"
+            "value": "中国大陆"
           }
         }
       }
