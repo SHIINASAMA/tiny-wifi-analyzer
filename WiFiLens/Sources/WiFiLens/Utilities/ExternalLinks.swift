@@ -14,6 +14,7 @@ enum ExternalDestination {
     case appStoreCampaignSettingsAbout
     case website
     case github
+    case githubIssues
     case xAccount
     case developerProfile
     case chartLensRepository
@@ -55,6 +56,8 @@ enum ExternalLinks {
             "https://wifi-lens.shiinalabs.com"
         case .github:
             "https://github.com/SHIINASAMA/wifi-lens"
+        case .githubIssues:
+            "https://github.com/SHIINASAMA/wifi-lens/issues"
         case .xAccount:
             "https://x.com/WiFiLens"
         case .developerProfile:

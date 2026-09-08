@@ -80,4 +80,9 @@ struct ExternalLinksTests {
     func discordURL() {
         #expect(ExternalLinks.url(for: .discord)?.absoluteString == "https://discord.gg/gH6sTCYaJ7")
     }
+
+    @Test("GitHub Issues maps to the project issue tracker")
+    func githubIssuesURL() {
+        #expect(ExternalLinks.url(for: .githubIssues)?.absoluteString == "https://github.com/SHIINASAMA/wifi-lens/issues")
+    }
 }

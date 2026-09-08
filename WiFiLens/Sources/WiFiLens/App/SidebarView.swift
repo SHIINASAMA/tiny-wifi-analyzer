@@ -122,7 +122,7 @@ enum SidebarPage: String, CaseIterable {
     static func wifiCallingBadgeStyle(for config: BuildConfig) -> SidebarBadge.Style? {
         switch config {
         case .oss: return .pro
-        case .pro: return nil
+        case .pro: return .preview
         }
     }
 

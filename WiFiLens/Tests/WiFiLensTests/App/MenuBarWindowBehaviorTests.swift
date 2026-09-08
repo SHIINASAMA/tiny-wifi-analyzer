@@ -28,6 +28,8 @@ struct MenuBarWindowBehaviorTests {
     func proSidebarBadgeStyle() {
         #expect(SidebarBadge.Style.pro.icon == "crown.fill")
         #expect(SidebarBadge.Style.pro.localizationKey == "common.badge.pro")
+        #expect(SidebarPage.wifiCallingBadgeStyle(for: .oss) == .pro)
+        #expect(SidebarPage.wifiCallingBadgeStyle(for: .pro) == .preview)
     }
 
     @Test("Preview sidebar badge uses preview-feature semantics")
