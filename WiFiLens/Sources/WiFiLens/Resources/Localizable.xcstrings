@@ -44437,6 +44437,30 @@
             "state": "translated",
             "value": "Orange"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
         }
       }
     },
@@ -44444,6 +44468,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SFR"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SFR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SFR"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SFR"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "SFR"
@@ -44459,6 +44507,30 @@
             "state": "translated",
             "value": "Free Mobile"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free Mobile"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free Mobile"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free Mobile"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free Mobile"
+          }
         }
       }
     },
@@ -44466,6 +44538,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouygues Telecom"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouygues Telecom"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouygues Telecom"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouygues Telecom"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Bouygues Telecom"
@@ -44481,6 +44577,30 @@
             "state": "translated",
             "value": "EE"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EE"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EE"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EE"
+          }
         }
       }
     },
@@ -44488,6 +44608,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O2"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O2"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O2"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O2"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "O2"
@@ -44503,6 +44647,30 @@
             "state": "translated",
             "value": "Three"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three"
+          }
         }
       }
     },
@@ -44510,6 +44678,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vodafone"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vodafone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vodafone"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vodafone"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Vodafone"
@@ -44525,6 +44717,30 @@
             "state": "translated",
             "value": "Deutsche Telekom"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsche Telekom"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsche Telekom"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsche Telekom"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsche Telekom"
+          }
         }
       }
     },
@@ -44532,6 +44748,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1&1"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1&1"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1&1"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1&1"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "1&1"
@@ -44547,6 +44787,30 @@
             "state": "translated",
             "value": "Telstra"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telstra"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telstra"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telstra"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telstra"
+          }
         }
       }
     },
@@ -44554,6 +44818,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optus"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optus"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optus"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optus"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "Optus"
@@ -44569,6 +44857,30 @@
             "state": "translated",
             "value": "Movistar"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movistar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movistar"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movistar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movistar"
+          }
         }
       }
     },
@@ -44580,6 +44892,30 @@
             "state": "translated",
             "value": "T-Mobile"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-Mobile"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-Mobile"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-Mobile"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "T-Mobile"
+          }
         }
       }
     },
@@ -44587,6 +44923,30 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AT&T"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AT&T"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AT&T"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AT&T"
+          }
+        },
+        "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "AT&T"
