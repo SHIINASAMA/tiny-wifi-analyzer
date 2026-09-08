@@ -6,6 +6,7 @@ Diagnostica problemas de conectividad, analiza la congestión del canal Wi-Fi y 
 
 **Código abierto para análisis en vivo. Pro añade monitoreo, historial y perspectivas para problemas que ocurren con el tiempo.**
 
+[![Downloads](https://img.shields.io/github/downloads/SHIINASAMA/wifi-lens/WiFiLens.dmg?label=downloads&color=2563eb)](https://github.com/SHIINASAMA/wifi-lens/releases/latest)
 [![Latest release](https://img.shields.io/github/v/release/SHIINASAMA/wifi-lens?label=Latest&color=2563eb)](https://github.com/SHIINASAMA/wifi-lens/releases/latest)
 [![macOS](https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey)](https://github.com/SHIINASAMA/wifi-lens/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
