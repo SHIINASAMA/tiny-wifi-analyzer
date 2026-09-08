@@ -85,4 +85,9 @@ struct ExternalLinksTests {
     func githubIssuesURL() {
         #expect(ExternalLinks.url(for: .githubIssues)?.absoluteString == "https://github.com/SHIINASAMA/wifi-lens/issues")
     }
+
+    @Test("Wi-Fi Calling feedback opens the dedicated issue template")
+    func githubWiFiCallingIssueURL() {
+        #expect(ExternalLinks.url(for: .githubWiFiCallingIssue)?.absoluteString == "https://github.com/SHIINASAMA/wifi-lens/issues/new?template=wifi-calling.yml&labels=wifi-calling")
+    }
 }
