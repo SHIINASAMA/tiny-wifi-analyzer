@@ -12,6 +12,64 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+private final class ConsoleDividerAnimation {
+    weak var splitView: NSSplitView?
+    let dividerIndex: Int
+    let startPosition: CGFloat
+    let endPosition: CGFloat
+    let duration: TimeInterval
+    private var startTime: TimeInterval = 0
+    private var timer: Timer?
+
+    init(splitView: NSSplitView,
+         dividerIndex: Int,
+         startPosition: CGFloat,
+         endPosition: CGFloat,
+         duration: TimeInterval) {
+        self.splitView = splitView
+        self.dividerIndex = dividerIndex
+        self.startPosition = startPosition
+        self.endPosition = endPosition
+        self.duration = duration
+    }
+
+    func start() {
+        stop()
+        startTime = CACurrentMediaTime()
+        apply(progress: 0)
+
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.tick()
+            }
+        }
+        self.timer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func tick() {
+        let progress = min(max((CACurrentMediaTime() - startTime) / duration, 0), 1)
+        let easedProgress = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - pow(-2 * progress + 2, 2) / 2
+        apply(progress: easedProgress)
+        if progress >= 1 {
+            stop()
+        }
+    }
+
+    private func apply(progress: Double) {
+        let position = startPosition + CGFloat(progress) * (endPosition - startPosition)
+        splitView?.setPosition(position, ofDividerAt: dividerIndex)
+    }
+}
+
 /// Moves the split divider between "status bar only" and "expanded" extents.
 @MainActor
 final class ConsolePanelController: NSObject {
@@ -21,6 +79,7 @@ final class ConsolePanelController: NSObject {
 
     private weak var split: NSSplitView?
     private var didInitialPosition = false
+    private var dividerAnimation: ConsoleDividerAnimation?
 
     init(statusBarHeight: CGFloat = 30, topMinimum: CGFloat = 240, expandedBottom: CGFloat = 300) {
         self.statusBarHeight = statusBarHeight
@@ -39,12 +98,12 @@ final class ConsolePanelController: NSObject {
         }
     }
 
-    func expandLog() {
-        setBottomExtent(expandedBottom)
+    func expandLog(animate: Bool = true) {
+        setBottomExtent(expandedBottom, animate: animate)
     }
 
-    func collapseLog() {
-        setBottomExtent(statusBarHeight)
+    func collapseLog(animate: Bool = true) {
+        setBottomExtent(statusBarHeight, animate: animate)
     }
 
     func setBottomExtent(_ desired: CGFloat, animate: Bool = true) {
@@ -54,11 +113,18 @@ final class ConsolePanelController: NSObject {
                          max(statusBarHeight, total - topMinimum))
         let position = total - bottom
         if animate {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
-                split.animator().setPosition(position, ofDividerAt: 0)
-            }
+            dividerAnimation?.stop()
+            let startPosition = split.arrangedSubviews.first?.frame.maxY ?? position
+            let animation = ConsoleDividerAnimation(splitView: split,
+                                                     dividerIndex: 0,
+                                                     startPosition: startPosition,
+                                                     endPosition: position,
+                                                     duration: 0.22)
+            dividerAnimation = animation
+            animation.start()
         } else {
+            dividerAnimation?.stop()
+            dividerAnimation = nil
             split.setPosition(position, ofDividerAt: 0)
         }
     }
