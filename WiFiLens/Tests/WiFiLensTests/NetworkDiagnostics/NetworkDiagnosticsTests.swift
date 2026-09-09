@@ -2397,8 +2397,8 @@ struct NetworkDiagnosticsTests {
         _ = await run.value
     }
 
-    @Test("a later same-interface path update is still a network change")
-    func sameInterfacePathUpdateIsDetected() async throws {
+    @Test("a duplicate path update is ignored")
+    func duplicatePathUpdateIsIgnored() async throws {
         let baseline = makeFingerprint(interfaceName: "en0", dnsHash: 1)
         let path = NetworkPathFingerprint(
             interfaceType: baseline.interfaceType,
@@ -2419,7 +2419,7 @@ struct NetworkDiagnosticsTests {
         }
 
         #expect(observation.baseline == baseline)
-        #expect(changes == [baseline])
+        #expect(changes.isEmpty)
     }
 
     @Test("baseline and an immediate path change share one buffered observation source")

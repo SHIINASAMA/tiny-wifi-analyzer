@@ -255,8 +255,9 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
                     while let path = await remainingPathIterator.next() {
                         guard !Task.isCancelled else { return }
                         let fingerprint = fingerprint(path: path)
-                        let emitted = await emissionState.receivePath(fingerprint)
-                        streamPair.continuation.yield(emitted)
+                        if let emitted = await emissionState.receivePath(fingerprint) {
+                            streamPair.continuation.yield(emitted)
+                        }
                     }
                 }
                 group.addTask {
@@ -313,7 +314,8 @@ private actor NetworkFingerprintEmissionState {
         latest = baseline
     }
 
-    func receivePath(_ fingerprint: NetworkFingerprint) -> NetworkFingerprint {
+    func receivePath(_ fingerprint: NetworkFingerprint) -> NetworkFingerprint? {
+        guard fingerprint != latest else { return nil }
         latest = fingerprint
         return fingerprint
     }
