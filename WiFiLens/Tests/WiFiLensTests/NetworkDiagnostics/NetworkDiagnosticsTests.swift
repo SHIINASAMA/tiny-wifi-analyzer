@@ -1507,6 +1507,42 @@ actor RecordingGatewayPingProcessRunner: GatewayPingProcessRunning {
     func cancel() async {}
 }
 
+actor ControlledGatewayPingProcessRunner: GatewayPingProcessRunning {
+    private var activeContinuations: [Int: CheckedContinuation<Double?, Never>] = [:]
+    private var invocationWaiters: [(target: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    private(set) var invocationCount = 0
+    private(set) var cancelledInvocationIDs: [Int] = []
+
+    func run(executablePath: String, arguments: [String]) async -> Double? {
+        invocationCount += 1
+        let invocationID = invocationCount
+        resumeInvocationWaiters()
+        return await withCheckedContinuation { continuation in
+            activeContinuations[invocationID] = continuation
+        }
+    }
+
+    func cancel() {
+        guard let invocationID = activeContinuations.keys.max(),
+              let continuation = activeContinuations.removeValue(forKey: invocationID) else {
+            return
+        }
+        cancelledInvocationIDs.append(invocationID)
+        continuation.resume(returning: nil)
+    }
+
+    func waitUntilInvocationCount(_ target: Int) async {
+        if invocationCount >= target { return }
+        await withCheckedContinuation { invocationWaiters.append((target, $0)) }
+    }
+
+    private func resumeInvocationWaiters() {
+        let ready = invocationWaiters.filter { invocationCount >= $0.target }
+        invocationWaiters.removeAll { invocationCount >= $0.target }
+        ready.forEach { $0.continuation.resume() }
+    }
+}
+
 actor RecordingDiagnosticGatewayMeasurer: DiagnosticGatewayMeasuring {
     private(set) var targets: [DiagnosticGatewayTarget] = []
 

@@ -150,25 +150,27 @@ extension NetworkDiagnosticsTests {
         ])
     }
 
-    @Test("overlapping ping runs preserve the latest cancellation owner")
-    func overlappingPingRunsPreserveCancellationOwnership() async {
-        let runner = SystemGatewayPingProcessRunner()
+    @Test("overlapping gateway pings preserve the latest cancellation owner")
+    func overlappingGatewayPingsPreserveCancellationOwnership() async {
+        let runner = ControlledGatewayPingProcessRunner()
+        let pinger = GatewayPinger(processRunner: runner)
+
         let first = Task {
-            await runner.run(executablePath: "/bin/sleep", arguments: ["0.1"])
+            await pinger.ping(host: "first.example")
         }
+        await runner.waitUntilInvocationCount(1)
 
-        try? await Task.sleep(for: .milliseconds(50))
-        let secondStartedAt = ContinuousClock.now
         let second = Task {
-            await runner.run(executablePath: "/bin/sleep", arguments: ["10"])
+            await pinger.ping(host: "second.example")
         }
+        await runner.waitUntilInvocationCount(2)
 
-        try? await Task.sleep(for: .milliseconds(400))
         await runner.cancel()
 
         #expect(await first.value == nil)
         #expect(await second.value == nil)
-        #expect(secondStartedAt.duration(to: ContinuousClock.now) < .seconds(1))
+        #expect(await runner.invocationCount == 2)
+        #expect(await runner.cancelledInvocationIDs == [1, 2])
     }
 
     @Test("contextual path and gateway checks use one selected interface")
@@ -381,4 +383,3 @@ extension NetworkDiagnosticsTests {
         #expect(!result.evidence.contains { $0.code.hasPrefix("gateway.") })
     }
 }
-
