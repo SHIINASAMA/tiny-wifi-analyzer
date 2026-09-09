@@ -288,6 +288,7 @@ final class NetworkDiagnosticsViewModel {
                     (await clock.now()).advanced(by: .seconds(1))
                 )
             )
+            guard isCurrentGeneration(generation) else { return }
             if fingerprintObservation == nil {
                 fingerprintMonitoringAvailable = false
             }
@@ -329,14 +330,20 @@ final class NetworkDiagnosticsViewModel {
         let monitorTask: Task<Void, Never>? = fingerprintObservation.map { observation in
             return Task {
                 for await fingerprint in observation.changes {
-                    guard !Task.isCancelled else { break }
+                    guard isCurrentGeneration(generation) else { break }
                     guard let previous = await fingerprintState?.accept(fingerprint) else { continue }
+                    guard isCurrentGeneration(generation) else { break }
+                    let now = await clock.now()
+                    guard isCurrentGeneration(generation) else { break }
+                    let shouldRestart = await restartController.observe(
+                        fingerprint,
+                        at: now
+                    )
+                    guard isCurrentGeneration(generation) else { break }
                     let runID = currentRunID ?? logSessionID
                     currentRunID = nil
-                    if await restartController.observe(
-                        fingerprint,
-                        at: await clock.now()
-                    ) {
+                    if shouldRestart {
+                        guard isCurrentGeneration(generation) else { break }
                         invalidateNetworkResultsForChange()
                         appendEvent(
                             .restarted,
@@ -419,23 +426,31 @@ final class NetworkDiagnosticsViewModel {
             }
             await restartController.install(runTask)
             let outcome = await runTask.value
+            guard isCurrentGeneration(generation) else { return }
 
-            if await restartController.completeRun() {
+            let shouldRestart = await restartController.completeRun()
+            guard isCurrentGeneration(generation) else { return }
+            if shouldRestart {
                 guard await restartController.waitForStability(
                     using: clock,
                     until: sessionDeadline
                 ) else {
+                    guard isCurrentGeneration(generation) else { return }
+                    let retainedResults = configurationOnlyResults(from: outcome.results)
                     finish(
                         DiagnosticRunOutcome(
                             runID: outcome.runID,
-                            results: outcome.results,
-                            pendingIDs: outcome.pendingIDs,
+                            results: retainedResults,
+                            pendingIDs: checkIDs.filter { id in
+                                !retainedResults.contains { $0.id == id }
+                            },
                             endReason: .superseded
                         ),
                         generation: generation
                     )
                     return
                 }
+                guard isCurrentGeneration(generation) else { return }
                 automaticRestartCount += 1
                 retainedResults = configurationOnlyResults(from: outcome.results)
                 currentRunID = nil
@@ -647,13 +662,15 @@ actor NetworkDiagnosticRestartController {
         until deadline: ContinuousClock.Instant
     ) async -> Bool {
         while !cancellationRequested, !finalized {
-            guard let lastChangeAt else { return false }
-            let stableAt = lastChangeAt.advanced(by: .milliseconds(500))
+            guard let latestChangeAt = lastChangeAt else { return false }
+            let stableAt = latestChangeAt.advanced(by: .milliseconds(500))
             let waitUntil = min(stableAt, deadline)
             try? await clock.sleep(until: waitUntil)
             if cancellationRequested || finalized { return false }
             let now = await clock.now()
-            if now >= stableAt {
+            guard let latestChangeAt = lastChangeAt else { return false }
+            let latestStableAt = latestChangeAt.advanced(by: .milliseconds(500))
+            if now >= latestStableAt {
                 restartInstallPending = false
                 return true
             }

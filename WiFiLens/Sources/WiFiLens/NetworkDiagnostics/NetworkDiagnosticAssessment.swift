@@ -80,9 +80,11 @@ struct NetworkDiagnosticAssessmentResolver: Sendable {
             return .init(stage: stage, status: .blocked, qualificationCode: nil)
         }
         if contributors.contains(where: { $0.status == .indeterminate }) {
+            let nonProxyContributors = contributors.filter { $0.id != .proxy }
             if stage == .thisMac,
                let proxy = results[.proxy],
-               isUnverifiedDirectRoute(proxy: proxy, internet: results[.internet]) {
+               isUnverifiedDirectRoute(proxy: proxy, internet: results[.internet]),
+               nonProxyContributors.allSatisfy({ $0.status == .normal }) {
                 return .init(
                     stage: stage,
                     status: .normal,
@@ -125,7 +127,7 @@ struct NetworkDiagnosticAssessmentResolver: Sendable {
            !hasDirectHTTPS(internet),
            !hasAvailableHTTPSProxy(proxy),
            internet?.evidence.contains(where: { $0.code == "https.connectivity-error" }) == true {
-            return externalSuccess ? .needsAttention : .networkUnavailable
+            return .needsAttention
         }
 
         let hasActionableIssue = [path, gateway, dns, internet, proxy]
@@ -234,6 +236,22 @@ struct NetworkDiagnosticAssessmentResolver: Sendable {
             && internet?.status == .normal
             && result.proxyFacts?.http == .unverified
             && result.proxyFacts?.https == .unverified
+            && hasExplicitDirectRouteEvidence(result)
+            && !result.evidence.contains {
+                $0.code == "proxy.http.resolution" || $0.code == "proxy.https.resolution"
+            }
+    }
+
+    private func hasExplicitDirectRouteEvidence(_ result: NetworkDiagnosticResult) -> Bool {
+        result.evidence.contains { evidence in
+            if evidence.code == "proxy.http.route-type" || evidence.code == "proxy.https.route-type" {
+                return evidence.value == "direct" || evidence.value == "tunnel"
+            }
+            if evidence.code == "proxy.http.egress-status" || evidence.code == "proxy.https.egress-status" {
+                return evidence.value == "base-check"
+            }
+            return false
+        }
     }
 
     private func isUnverifiedDirectRoute(

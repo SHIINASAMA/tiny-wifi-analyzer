@@ -121,7 +121,7 @@ struct SystemDiagnosticRouteSource: DiagnosticRouteSourcing {
     }
 }
 
-private struct DiagnosticRouteProcessResult: Sendable {
+struct DiagnosticRouteProcessResult: Sendable {
     let exitCode: Int32?
     let stdout: String
     let stderr: String
@@ -129,7 +129,7 @@ private struct DiagnosticRouteProcessResult: Sendable {
     let cancelled: Bool
 }
 
-private final class DiagnosticRouteProcessExecution: @unchecked Sendable {
+final class DiagnosticRouteProcessExecution: @unchecked Sendable {
     private let lock = NSLock()
     private let process: Process
     private let stdoutPipe = Pipe()
@@ -194,11 +194,14 @@ private final class DiagnosticRouteProcessExecution: @unchecked Sendable {
             lock.unlock()
             return
         }
-        process.terminate()
         let continuation = self.continuation
         self.continuation = nil
         didFinish = true
         lock.unlock()
+
+        if process.isRunning {
+            process.terminate()
+        }
 
         continuation?.resume(returning: .init(
             exitCode: nil,
@@ -210,11 +213,16 @@ private final class DiagnosticRouteProcessExecution: @unchecked Sendable {
     }
 
     private func execute() {
+        guard !isFinished() else { return }
         do {
             try process.run()
         } catch {
             finish(timedOut: false, cancelled: false)
             return
+        }
+
+        if isFinished(), process.isRunning {
+            process.terminate()
         }
 
         process.waitUntilExit()
@@ -230,10 +238,16 @@ private final class DiagnosticRouteProcessExecution: @unchecked Sendable {
         didFinish = true
         let continuation = self.continuation
         self.continuation = nil
-        let exitCode = process.isRunning ? nil : process.terminationStatus
-        let stdout = read(pipe: stdoutPipe.fileHandleForReading)
-        let stderr = read(pipe: stderrPipe.fileHandleForReading)
         lock.unlock()
+
+        let shouldStop = timedOut || cancelled
+        if shouldStop, process.isRunning {
+            process.terminate()
+        }
+
+        let exitCode = shouldStop || process.isRunning ? nil : process.terminationStatus
+        let stdout = shouldStop ? "" : read(pipe: stdoutPipe.fileHandleForReading)
+        let stderr = shouldStop ? "" : read(pipe: stderrPipe.fileHandleForReading)
 
         continuation?.resume(returning: .init(
             exitCode: exitCode,
@@ -242,6 +256,12 @@ private final class DiagnosticRouteProcessExecution: @unchecked Sendable {
             timedOut: timedOut,
             cancelled: cancelled
         ))
+    }
+
+    private func isFinished() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return didFinish
     }
 
     private func read(pipe: FileHandle) -> String {

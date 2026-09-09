@@ -481,12 +481,6 @@ private actor NetworkFingerprintEmissionState {
         staticProxySettingsHash: UInt64,
         routeState: NetworkFingerprintRouteState? = nil
     ) -> NetworkFingerprint? {
-        guard
-            dnsSettingsHash != latest.dnsSettingsHash
-                || staticProxySettingsHash != latest.staticProxySettingsHash
-        else {
-            return nil
-        }
         let fingerprint = NetworkFingerprint(
             interfaceType: latest.interfaceType,
             interfaceName: latest.interfaceName,
@@ -495,13 +489,24 @@ private actor NetworkFingerprintEmissionState {
             staticProxySettingsHash: staticProxySettingsHash,
             tunnelInterfaces: latest.tunnelInterfaces,
             routedTunnelInterface: latest.routedTunnelInterface,
-            selectedInterfaceIndex: routeState?.interfaceIndex ?? latest.selectedInterfaceIndex,
-            selectedInterfaceAddresses: routeState?.addresses ?? latest.selectedInterfaceAddresses,
-            selectedInterfaceSubnets: routeState?.subnets ?? latest.selectedInterfaceSubnets,
-            selectedGateway: routeState?.gateway ?? latest.selectedGateway,
-            ipv4PrimaryServiceIdentity: routeState?.ipv4PrimaryServiceIdentity ?? latest.ipv4PrimaryServiceIdentity,
-            ipv6PrimaryServiceIdentity: routeState?.ipv6PrimaryServiceIdentity ?? latest.ipv6PrimaryServiceIdentity
+            selectedInterfaceIndex: routeState == nil
+                ? latest.selectedInterfaceIndex
+                : routeState?.interfaceIndex,
+            selectedInterfaceAddresses: routeState == nil
+                ? latest.selectedInterfaceAddresses
+                : routeState?.addresses ?? [],
+            selectedInterfaceSubnets: routeState == nil
+                ? latest.selectedInterfaceSubnets
+                : routeState?.subnets ?? [],
+            selectedGateway: routeState == nil ? latest.selectedGateway : routeState?.gateway,
+            ipv4PrimaryServiceIdentity: routeState == nil
+                ? latest.ipv4PrimaryServiceIdentity
+                : routeState?.ipv4PrimaryServiceIdentity,
+            ipv6PrimaryServiceIdentity: routeState == nil
+                ? latest.ipv6PrimaryServiceIdentity
+                : routeState?.ipv6PrimaryServiceIdentity
         )
+        guard fingerprint != latest else { return nil }
         latest = fingerprint
         return fingerprint
     }
