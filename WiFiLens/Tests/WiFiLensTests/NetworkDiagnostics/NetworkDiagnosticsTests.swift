@@ -2207,6 +2207,46 @@ struct NetworkDiagnosticsTests {
         #expect(viewModel.executionPhases.values.allSatisfy { $0 == .completed })
     }
 
+    @Test("network diagnostics keeps an isolated resettable log buffer")
+    func networkDiagnosticsLogStoreIsResettable() {
+        var store = NetworkDiagnosticsLogStore()
+
+        store.append("self-check started")
+        store.append("DNS resolved")
+
+        #expect(store.lines == ["self-check started", "DNS resolved"])
+        #expect(store.text == "self-check started\nDNS resolved")
+
+        store.reset()
+
+        #expect(store.lines.isEmpty)
+        #expect(store.text.isEmpty)
+    }
+
+    @Test("view model publishes its own diagnostic result logs")
+    @MainActor
+    func viewModelPublishesDiagnosticLogs() async {
+        let viewModel = NetworkDiagnosticsViewModel(
+            checks: makeStubChecks(recorder: DiagnosticTestRecorder()),
+            minimumStepDuration: .zero,
+            fingerprintMonitor: DisabledNetworkFingerprintMonitor()
+        )
+
+        #expect(viewModel.logText.isEmpty)
+        #expect(viewModel.start())
+        await viewModel.waitForCompletion()
+
+        #expect(viewModel.logStore.lines == [
+            "Checking…",
+            "Network Path: Normal",
+            "DNS Resolution: Normal",
+            "System Proxy: Normal",
+        ])
+
+        viewModel.clearLogs()
+        #expect(viewModel.logText.isEmpty)
+    }
+
     @Test("view model clears the previous conclusion before a rerun")
     @MainActor
     func viewModelRerun() async {

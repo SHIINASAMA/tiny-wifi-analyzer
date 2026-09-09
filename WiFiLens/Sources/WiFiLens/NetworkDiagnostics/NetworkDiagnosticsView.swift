@@ -6,33 +6,23 @@ struct NetworkDiagnosticsView: View {
     let guidance: GuidanceCoordinator = .shared
     @State private var expandedGroupOverride: [String: Bool] = [:]
     @State private var renderedInvitationID: UUID?
+    @State private var consolePanelController = ConsolePanelController(
+        statusBarHeight: 30,
+        topMinimum: 240,
+        expandedBottom: 300
+    )
+    @State private var logExpanded = false
 
     var body: some View {
         GeometryReader { geometry in
             let layoutMode = NetworkDiagnosticsWorkbenchLayout.mode(for: geometry.size.width)
 
-            VStack(spacing: 0) {
-                commandBar
-                Divider()
-
-                if viewModel.phase == .running {
-                    progressStrip
-                    Divider()
-                } else if let conclusion = viewModel.conclusion {
-                    conclusionStrip(conclusion)
-                    Divider()
-                    if let invitation = guidance.pendingInvitation,
-                       invitation.moment == .diagnosticsCompleted {
-                        ProInvitationCard(invitation: invitation, guidance: guidance)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                            .onAppear { renderedInvitationID = invitation.id }
-                    }
-                }
-
-                workspace(layoutMode)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
+            ConsoleSplitView(
+                content: diagnosticsContent(layoutMode),
+                bottom: diagnosticsConsole,
+                controller: consolePanelController
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: viewModel.phase)
 #if DEBUG
@@ -51,6 +41,146 @@ struct NetworkDiagnosticsView: View {
                 guidance.endInvitationPresentation(id: id)
                 renderedInvitationID = nil
             }
+        }
+    }
+
+    @ViewBuilder
+    private func diagnosticsContent(_ layoutMode: NetworkDiagnosticsWorkbenchLayoutMode) -> some View {
+        VStack(spacing: 0) {
+            commandBar
+            Divider()
+
+            if viewModel.phase == .running {
+                progressStrip
+                Divider()
+            } else if let conclusion = viewModel.conclusion {
+                conclusionStrip(conclusion)
+                Divider()
+                if let invitation = guidance.pendingInvitation,
+                   invitation.moment == .diagnosticsCompleted {
+                    ProInvitationCard(invitation: invitation, guidance: guidance)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .onAppear { renderedInvitationID = invitation.id }
+                }
+            }
+
+            workspace(layoutMode)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private var diagnosticsConsole: some View {
+        VStack(spacing: 0) {
+            diagnosticsLogStatusBar
+            LogTextView(text: viewModel.logText)
+                .background(Color.black.opacity(0.06))
+        }
+    }
+
+    private var diagnosticsLogStatusBar: some View {
+        HStack(spacing: 10) {
+            diagnosticsStatusLeading
+            Spacer(minLength: 8)
+            if !viewModel.logText.isEmpty {
+                Text("\(viewModel.logStore.lines.count)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .background(Capsule().fill(.quaternary.opacity(0.4)))
+            }
+            if !viewModel.logText.isEmpty {
+                Button {
+                    viewModel.clearLogs()
+                } label: {
+                    Image(systemName: "trash").font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .frame(width: 26, height: 22)
+                .contentShape(Rectangle())
+                .help(String(localized: "network_diagnostics.log.clear", comment: "Clear network self-check logs action"))
+                .accessibilityLabel(String(localized: "network_diagnostics.log.clear", comment: "Clear network self-check logs action"))
+                .accessibilityIdentifier("network-diagnostics-log-clear")
+            }
+            Button {
+                toggleLogPanel()
+            } label: {
+                Image(systemName: logExpanded ? "chevron.down" : "chevron.up")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.borderless)
+            .frame(width: 30, height: 22)
+            .contentShape(Rectangle())
+            .help(
+                String(
+                    localized: logExpanded
+                        ? "network_diagnostics.log.collapse"
+                        : "network_diagnostics.log.expand",
+                    comment: "Network self-check log panel expand or collapse action"
+                )
+            )
+            .accessibilityLabel(
+                String(
+                    localized: logExpanded
+                        ? "network_diagnostics.log.collapse"
+                        : "network_diagnostics.log.expand",
+                    comment: "Network self-check log panel expand or collapse action"
+                )
+            )
+            .accessibilityIdentifier("network-diagnostics-log-toggle")
+        }
+        .padding(.horizontal, 12)
+        .frame(minHeight: 30)
+    }
+
+    @ViewBuilder
+    private var diagnosticsStatusLeading: some View {
+        switch viewModel.phase {
+        case .idle:
+            Label(
+                String(localized: "network_diagnostics.state.waiting", comment: "Network self-check waiting state"),
+                systemImage: "circle.dotted"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        case .running:
+            HStack(spacing: 7) {
+                ProgressView().controlSize(.mini)
+                Text(viewModel.logStore.lines.last ?? String(localized: "network_diagnostics.state.checking", comment: "Network self-check running state"))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        case .completed:
+            if let conclusion = viewModel.conclusion {
+                Label(conclusionTitle(conclusion), systemImage: conclusionIcon(conclusion))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(conclusionColor(conclusion))
+                    .lineLimit(1)
+            } else {
+                Label(
+                    String(localized: "network_diagnostics.state.waiting", comment: "Network self-check waiting state"),
+                    systemImage: "circle.dotted"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+        }
+    }
+
+    private func toggleLogPanel() {
+        let shouldExpand = !logExpanded
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+            logExpanded = shouldExpand
+        }
+        if shouldExpand {
+            consolePanelController.expandLog(animate: !reduceMotion)
+        } else {
+            consolePanelController.collapseLog(animate: !reduceMotion)
         }
     }
 
@@ -548,20 +678,7 @@ struct NetworkDiagnosticsView: View {
     }
 
     private func checkTitle(_ id: NetworkDiagnosticCheckID) -> String {
-        switch id {
-        case .path:
-            String(localized: "network_diagnostics.check.path.title", comment: "Network system path check title")
-        case .gatewayReachability:
-            String(localized: "network_diagnostics.check.gateway_reachability.title", comment: "Gateway reachability check title")
-        case .dns:
-            String(localized: "network_diagnostics.check.dns.title", comment: "DNS resolution check title")
-        case .internet:
-            String(localized: "network_diagnostics.check.internet.title", comment: "Internet access check title")
-        case .ipv6:
-            String(localized: "network_diagnostics.check.ipv6.title", comment: "Optional forced IPv6 access check title")
-        case .proxy:
-            String(localized: "network_diagnostics.check.proxy.title", comment: "System proxy check title")
-        }
+        id.localizedTitle
     }
 
     private func checkIcon(_ id: NetworkDiagnosticCheckID) -> String {
@@ -576,18 +693,7 @@ struct NetworkDiagnosticsView: View {
     }
 
     private func statusTitle(_ status: NetworkDiagnosticStatus) -> String {
-        switch status {
-        case .normal:
-            String(localized: "network_diagnostics.status.normal", comment: "Normal network self-check status")
-        case .abnormal:
-            String(localized: "network_diagnostics.status.abnormal", comment: "Abnormal network self-check status")
-        case .indeterminate:
-            String(localized: "network_diagnostics.status.indeterminate", comment: "Indeterminate network self-check status")
-        case .blocked:
-            String(localized: "network_diagnostics.status.blocked", comment: "Blocked network self-check status")
-        case .skipped:
-            String(localized: "network_diagnostics.status.skipped", comment: "Skipped network self-check status")
-        }
+        status.localizedTitle
     }
 
     private func statusIcon(_ status: NetworkDiagnosticStatus) -> String {

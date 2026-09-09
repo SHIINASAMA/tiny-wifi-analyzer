@@ -2,10 +2,75 @@ import Foundation
 
 enum NetworkDiagnosticStatus: String, CaseIterable, Equatable, Sendable {
     case normal, abnormal, indeterminate, blocked, skipped
+
+    var logTitle: String {
+        switch self {
+        case .normal:
+            "Normal"
+        case .abnormal:
+            "Abnormal"
+        case .indeterminate:
+            "Indeterminate"
+        case .blocked:
+            "Blocked"
+        case .skipped:
+            "Skipped"
+        }
+    }
 }
 
 enum NetworkDiagnosticCheckID: String, CaseIterable, Equatable, Hashable, Sendable {
     case path, gatewayReachability, dns, internet, ipv6, proxy
+
+    var logTitle: String {
+        switch self {
+        case .path:
+            "Network Path"
+        case .gatewayReachability:
+            "Gateway Reachability"
+        case .dns:
+            "DNS Resolution"
+        case .internet:
+            "Internet Access"
+        case .ipv6:
+            "IPv6 Connectivity"
+        case .proxy:
+            "System Proxy"
+        }
+    }
+
+    var localizedTitle: String {
+        switch self {
+        case .path:
+            String(localized: "network_diagnostics.check.path.title", comment: "Network system path check title")
+        case .gatewayReachability:
+            String(localized: "network_diagnostics.check.gateway_reachability.title", comment: "Gateway reachability check title")
+        case .dns:
+            String(localized: "network_diagnostics.check.dns.title", comment: "DNS resolution check title")
+        case .internet:
+            String(localized: "network_diagnostics.check.internet.title", comment: "Internet access check title")
+        case .ipv6:
+            String(localized: "network_diagnostics.check.ipv6.title", comment: "Optional forced IPv6 access check title")
+        case .proxy:
+            String(localized: "network_diagnostics.check.proxy.title", comment: "System proxy check title")
+        }
+    }
+}
+
+struct NetworkDiagnosticsLogStore: Equatable, Sendable {
+    private(set) var lines: [String] = []
+
+    var text: String {
+        lines.joined(separator: "\n")
+    }
+
+    mutating func append(_ line: String) {
+        lines.append(line)
+    }
+
+    mutating func reset() {
+        lines.removeAll(keepingCapacity: true)
+    }
 }
 
 enum NetworkDiagnosticStatusTone: Equatable, Sendable {
@@ -36,6 +101,13 @@ extension NetworkDiagnosticStatus {
         case .skipped:
             .init(labelKey: "network_diagnostics.status.skipped", icon: "forward.fill", tone: .muted)
         }
+    }
+
+    var localizedTitle: String {
+        String(
+            localized: .init(stringLiteral: presentation.labelKey),
+            comment: "Network self-check status title"
+        )
     }
 }
 

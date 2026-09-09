@@ -126,9 +126,12 @@ final class NetworkDiagnosticsViewModel {
     private(set) var phase = NetworkDiagnosticsPagePhase.idle
     private(set) var executionPhases: [NetworkDiagnosticCheckID: NetworkDiagnosticExecutionPhase]
     private(set) var results: [NetworkDiagnosticCheckID: NetworkDiagnosticResult] = [:]
+    private(set) var logStore = NetworkDiagnosticsLogStore()
     private(set) var conclusion: NetworkDiagnosticConclusion?
     private(set) var automaticRestartCount = 0
     let checkIDs: [NetworkDiagnosticCheckID]
+
+    var logText: String { logStore.text }
 
     @ObservationIgnored private let checks: [any DiagnosticCheck]
     @ObservationIgnored private let minimumStepDuration: Duration
@@ -167,6 +170,8 @@ final class NetworkDiagnosticsViewModel {
         guard activeTask == nil else { return false }
 
         results = [:]
+        logStore.reset()
+        logStore.append("Checking…")
         conclusion = nil
         automaticRestartCount = 0
         phase = .running
@@ -187,9 +192,14 @@ final class NetworkDiagnosticsViewModel {
         activeTask?.cancel()
     }
 
+    func clearLogs() {
+        logStore.reset()
+    }
+
     private func accept(_ result: NetworkDiagnosticResult) {
         results[result.id] = result
         executionPhases[result.id] = .completed
+        logStore.append("\(result.id.logTitle): \(result.status.logTitle)")
 
         guard let index = checkIDs.firstIndex(of: result.id) else { return }
         let nextIndex = checkIDs.index(after: index)
