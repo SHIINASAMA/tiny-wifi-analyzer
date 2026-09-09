@@ -177,7 +177,7 @@ struct NetworkDiagnosticsTests {
     func routeCommandTimeoutDoesNotWaitForChild() async {
         let execution = DiagnosticRouteProcessExecution(
             executablePath: "/bin/sleep",
-            arguments: ["2"],
+            arguments: ["5"],
             environment: [:],
             outputLimit: 1024
         )
@@ -186,7 +186,7 @@ struct NetworkDiagnosticsTests {
         let elapsed = startedAt.duration(to: ContinuousClock.now)
 
         #expect(result.timedOut)
-        #expect(elapsed < .seconds(1))
+        #expect(elapsed < .seconds(2))
     }
 
     @Test("diagnostic gateway ping binds the selected interface")
@@ -205,6 +205,27 @@ struct NetworkDiagnosticsTests {
         #expect(await runner.arguments == [
             "-b", "en7", "-c", "1", "-W", "1000", "192.0.2.1"
         ])
+    }
+
+    @Test("overlapping ping runs preserve the latest cancellation owner")
+    func overlappingPingRunsPreserveCancellationOwnership() async {
+        let runner = SystemGatewayPingProcessRunner()
+        let first = Task {
+            await runner.run(executablePath: "/bin/sleep", arguments: ["0.1"])
+        }
+
+        try? await Task.sleep(for: .milliseconds(50))
+        let secondStartedAt = ContinuousClock.now
+        let second = Task {
+            await runner.run(executablePath: "/bin/sleep", arguments: ["10"])
+        }
+
+        try? await Task.sleep(for: .milliseconds(400))
+        await runner.cancel()
+
+        #expect(await first.value == nil)
+        #expect(await second.value == nil)
+        #expect(secondStartedAt.duration(to: ContinuousClock.now) < .seconds(1))
     }
 
     @Test("contextual path and gateway checks use one selected interface")
@@ -396,7 +417,7 @@ struct NetworkDiagnosticsTests {
             StubDiagnosticCheck(id: .gatewayReachability, result: NetworkDiagnosticResult(id: .gatewayReachability, status: .normal, summary: "unused"), recorder: recorder),
             StubDiagnosticCheck(id: .dns, result: NetworkDiagnosticResult(id: .dns, status: .normal, summary: "unused"), recorder: recorder),
         ]
-        let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
+        let runner = DiagnosticRunner(checks: checks)
 
         let results = (await runner.run { _ in }).results
 
@@ -412,7 +433,7 @@ struct NetworkDiagnosticsTests {
             let status: NetworkDiagnosticStatus = id == .gatewayReachability ? .abnormal : .normal
             return StubDiagnosticCheck(id: id, result: NetworkDiagnosticResult(id: id, status: status, summary: id.rawValue), recorder: recorder)
         }
-        let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
+        let runner = DiagnosticRunner(checks: checks)
 
         let results = (await runner.run { _ in }).results
 
@@ -554,10 +575,20 @@ struct NetworkDiagnosticsTests {
     @Test("runner enforces an overall session budget")
     func runnerEnforcesOverallBudget() async {
         let probe = BudgetAwareDiagnosticProbe()
-        let outcome = await DiagnosticRunner(
-            checks: [BudgetAwareDiagnosticCheck(probe: probe)],
-            sessionBudget: .milliseconds(50)
-        ).run { _ in }
+        let clock = ManualDiagnosticClock()
+        let task = Task {
+            await DiagnosticRunner(
+                checks: [BudgetAwareDiagnosticCheck(probe: probe)],
+                sessionBudget: .seconds(1),
+                clock: clock
+            ).run { _ in }
+        }
+
+        await probe.waitForInvocation()
+        await clock.waitForSleeperCount(1)
+        await clock.set(clock.origin.advanced(by: .seconds(1)))
+
+        let outcome = await task.value
 
         #expect(await probe.wasCancelled)
         #expect(outcome.results.map(\.id) == [.path])
@@ -608,7 +639,7 @@ struct NetworkDiagnosticsTests {
             ),
             BlockingProbeDiagnosticCheck(id: .gatewayReachability, probe: probe),
         ]
-        let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
+        let runner = DiagnosticRunner(checks: checks)
         let task = Task { await runner.run { _ in } }
 
         await probe.waitForInvocationCount(1)
@@ -702,27 +733,6 @@ struct NetworkDiagnosticsTests {
 
         #expect(results.map(\.status) == [.abnormal, .blocked, .blocked, .blocked, .blocked, .blocked])
         #expect(await invocations.values == [.path])
-    }
-
-    @Test("runner does not delay the next operation for presentation")
-    func runnerMinimumPresentationDuration() async {
-        let check = StubDiagnosticCheck(
-            id: .path,
-            result: NetworkDiagnosticResult(id: .path, status: .normal, summary: "ok"),
-            recorder: DiagnosticTestRecorder()
-        )
-        let outcome = await DiagnosticRunner(
-            checks: [check],
-            minimumStepDuration: .milliseconds(50)
-        ).run { _ in }
-
-        #expect(outcome.endReason == .completed)
-    }
-
-    @Test("production diagnostics present each check for at least 0.8 seconds")
-    @MainActor
-    func productionMinimumPresentationDuration() {
-        #expect(NetworkDiagnosticsViewModel.defaultMinimumStepDuration == .milliseconds(800))
     }
 
     @Test("system path failure makes the network unavailable")
@@ -2744,7 +2754,6 @@ struct NetworkDiagnosticsTests {
         let guidance = IsolatedGuidance()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: makeStubChecks(recorder: recorder),
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor(),
             guidance: guidance.coordinator
         )
@@ -2761,6 +2770,31 @@ struct NetworkDiagnosticsTests {
         #expect(viewModel.conclusion == .networkNormal)
         #expect(viewModel.results.count == 3)
         #expect(viewModel.executionPhases.values.allSatisfy { $0 == .completed })
+    }
+
+    @Test("fingerprint observation timeout does not wait for a cancellation-ignoring monitor")
+    @MainActor
+    func fingerprintObservationTimeoutIsBounded() async {
+        let monitor = CancellationIgnoringNetworkFingerprintMonitor()
+        let clock = ManualDiagnosticClock()
+        let viewModel = NetworkDiagnosticsViewModel(
+            checks: [],
+            fingerprintMonitor: monitor,
+            clock: clock
+        )
+
+        #expect(viewModel.start())
+        await monitor.waitForInvocation()
+        await clock.set(clock.origin.advanced(by: .seconds(1)))
+
+        for _ in 0..<100 {
+            if !viewModel.fingerprintMonitoringAvailable { break }
+            await Task.yield()
+        }
+
+        #expect(!viewModel.fingerprintMonitoringAvailable)
+        await monitor.release()
+        await viewModel.waitForCompletion()
     }
 
     @Test("network diagnostics keeps an isolated resettable log buffer")
@@ -2825,7 +2859,6 @@ struct NetworkDiagnosticsTests {
     func viewModelPublishesDiagnosticLogs() async {
         let viewModel = NetworkDiagnosticsViewModel(
             checks: makeStubChecks(recorder: DiagnosticTestRecorder()),
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor()
         )
 
@@ -2871,7 +2904,6 @@ struct NetworkDiagnosticsTests {
         let guidance = IsolatedGuidance()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: makeStubChecks(recorder: recorder),
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor(),
             guidance: guidance.coordinator
         )
@@ -2910,7 +2942,6 @@ struct NetworkDiagnosticsTests {
         ]
         let viewModel = NetworkDiagnosticsViewModel(
             checks: checks,
-            minimumStepDuration: .zero,
             fingerprintMonitor: fingerprintMonitor,
             guidance: guidance.coordinator
         )
@@ -2946,7 +2977,6 @@ struct NetworkDiagnosticsTests {
                     probe: probe
                 ),
             ],
-            minimumStepDuration: .zero,
             fingerprintMonitor: fingerprintMonitor,
             guidance: guidance.coordinator
         )
@@ -2970,7 +3000,6 @@ struct NetworkDiagnosticsTests {
         let guidance = IsolatedGuidance()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: [BlockingProbeDiagnosticCheck(id: .path, probe: probe)],
-            minimumStepDuration: .zero,
             fingerprintMonitor: fingerprintMonitor,
             guidance: guidance.coordinator
         )
@@ -3001,45 +3030,37 @@ struct NetworkDiagnosticsTests {
     @Test("stability window starts from the latest network change")
     func stabilityWindowUsesLatestChange() async {
         let controller = NetworkDiagnosticRestartController()
-        let base = ContinuousClock.now
+        let clock = ManualDiagnosticClock()
+        let base = clock.origin
         let first = makeFingerprint(interfaceName: "en1", dnsHash: 2)
         let second = makeFingerprint(interfaceName: "en2", dnsHash: 3)
+        let completion = OptionalBoolRecorder()
 
         #expect(await controller.observe(first, at: base))
         let waitTask = Task {
-            await controller.waitForStability(
-                using: ContinuousDiagnosticClock(),
+            let result = await controller.waitForStability(
+                using: clock,
                 until: base.advanced(by: .seconds(2))
             )
+            await completion.record(result)
+            return result
         }
 
-        try? await Task.sleep(for: .milliseconds(400))
+        await clock.waitForSleeperCount(1)
+        await clock.set(base.advanced(by: .milliseconds(400)))
         #expect(await controller.observe(
             second,
             at: base.advanced(by: .milliseconds(400))
         ))
 
-        let completedBeforeLatestWindow = await withTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                await waitTask.value
-                return true
-            }
-            group.addTask {
-                do {
-                    try await Task.sleep(for: .milliseconds(400))
-                } catch {
-                    return false
-                }
-                return false
-            }
-            let result = await group.next() ?? false
-            group.cancelAll()
-            return result
-        }
+        await clock.waitForSleeperCount(1)
+        await clock.set(base.advanced(by: .milliseconds(800)))
+        await Task.yield()
+        #expect(await completion.value == nil)
 
-        #expect(!completedBeforeLatestWindow)
-        await controller.cancelCurrentRun()
-        _ = await waitTask.value
+        await clock.set(base.advanced(by: .milliseconds(900)))
+        #expect(await waitTask.value)
+        #expect(await completion.value == true)
     }
 
     @Test("explicit cancellation is latched before a run is installed")
@@ -3120,7 +3141,6 @@ struct NetworkDiagnosticsTests {
         let probe = BlockingDiagnosticProbe()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: [BlockingProbeDiagnosticCheck(id: .path, probe: probe)],
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor()
         )
 
@@ -3140,7 +3160,6 @@ struct NetworkDiagnosticsTests {
         let probe = CancellationIgnoringDiagnosticProbe()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: [CancellationIgnoringProbeDiagnosticCheck(probe: probe)],
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor()
         )
 
@@ -3179,7 +3198,6 @@ struct NetworkDiagnosticsTests {
                 ),
                 BlockingProbeDiagnosticCheck(id: .dns, probe: blockingProbe),
             ],
-            minimumStepDuration: .zero,
             fingerprintMonitor: fingerprintMonitor,
             clock: clock
         )
@@ -3204,7 +3222,6 @@ struct NetworkDiagnosticsTests {
         let guidance = IsolatedGuidance()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: makeStubChecks(recorder: recorder),
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor(),
             guidance: guidance.coordinator
         )
@@ -3227,7 +3244,6 @@ struct NetworkDiagnosticsTests {
         let guidance = IsolatedGuidance()
         let viewModel = NetworkDiagnosticsViewModel(
             checks: [BlockingProbeDiagnosticCheck(id: .path, probe: probe)],
-            minimumStepDuration: .zero,
             fingerprintMonitor: DisabledNetworkFingerprintMonitor(),
             guidance: guidance.coordinator
         )
@@ -3852,13 +3868,31 @@ private struct MetricsControlLoader: ControlEndpointLoading {
 }
 
 private actor BudgetAwareDiagnosticProbe {
+    private var didStart = false
+    private var invocationContinuation: CheckedContinuation<Void, Never>?
     private(set) var wasCancelled = false
 
     func run() async {
+        didStart = true
+        invocationContinuation?.resume()
+        invocationContinuation = nil
         do {
             try await Task.sleep(for: .seconds(30))
         } catch {
             wasCancelled = true
+        }
+    }
+
+    func waitForInvocation() async {
+        if didStart {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            if didStart {
+                continuation.resume()
+            } else {
+                invocationContinuation = continuation
+            }
         }
     }
 }
@@ -3906,9 +3940,23 @@ private actor ManualDiagnosticClock: DiagnosticClock {
         }
     }
 
+    func waitForSleeperCount(_ count: Int) async {
+        while sleepers.count < count {
+            await Task.yield()
+        }
+    }
+
     private func cancelSleep(id: UUID) {
         guard let sleeper = sleepers.removeValue(forKey: id) else { return }
         sleeper.continuation.resume()
+    }
+}
+
+private actor OptionalBoolRecorder {
+    private(set) var value: Bool?
+
+    func record(_ value: Bool) {
+        self.value = value
     }
 }
 
@@ -4845,6 +4893,27 @@ private actor ControlledNetworkFingerprintMonitor: NetworkFingerprintMonitoring 
             continuation.yield(fingerprint)
         }
         pending = []
+    }
+}
+
+private actor CancellationIgnoringNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
+    private var continuation: CheckedContinuation<NetworkFingerprintObservation?, Never>?
+
+    func observation() async -> NetworkFingerprintObservation? {
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func waitForInvocation() async {
+        while continuation == nil {
+            await Task.yield()
+        }
+    }
+
+    func release() {
+        continuation?.resume(returning: nil)
+        continuation = nil
     }
 }
 

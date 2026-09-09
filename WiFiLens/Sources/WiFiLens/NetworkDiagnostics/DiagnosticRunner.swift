@@ -87,7 +87,6 @@ private final class DiagnosticCheckCompletionGate: @unchecked Sendable {
 
 struct DiagnosticRunner: Sendable {
     let checks: [any DiagnosticCheck]
-    var minimumStepDuration: Duration = .zero
     var sessionBudget: Duration = .seconds(30)
     var clock: any DiagnosticClock = ContinuousDiagnosticClock()
 

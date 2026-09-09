@@ -134,7 +134,6 @@ enum NetworkDiagnosticsPresentation {
 @MainActor
 @Observable
 final class NetworkDiagnosticsViewModel {
-    static let defaultMinimumStepDuration = Duration.milliseconds(800)
     static let defaultSessionBudget = Duration.seconds(30)
 
     private(set) var phase = NetworkDiagnosticsPagePhase.idle
@@ -153,7 +152,6 @@ final class NetworkDiagnosticsViewModel {
     var logText: String { logStore.text }
 
     @ObservationIgnored private let checks: [any DiagnosticCheck]
-    @ObservationIgnored private let minimumStepDuration: Duration
     @ObservationIgnored private let fingerprintMonitor: any NetworkFingerprintMonitoring
     @ObservationIgnored private let contextSource: any DiagnosticNetworkContextSourcing
     @ObservationIgnored private let diagnosticGatewayMeasuring: any DiagnosticGatewayMeasuring
@@ -167,7 +165,6 @@ final class NetworkDiagnosticsViewModel {
 
     init(
     checks: [any DiagnosticCheck]? = nil,
-    minimumStepDuration: Duration = NetworkDiagnosticsViewModel.defaultMinimumStepDuration,
     fingerprintMonitor: any NetworkFingerprintMonitoring = SystemNetworkFingerprintMonitor(
         routeStateSource: SystemNetworkFingerprintRouteStateSource()
     ),
@@ -179,7 +176,6 @@ final class NetworkDiagnosticsViewModel {
         let productionChecks = checks == nil
         let configuredChecks = checks ?? Self.defaultChecks()
         self.checks = configuredChecks
-        self.minimumStepDuration = minimumStepDuration
         self.fingerprintMonitor = fingerprintMonitor
         self.contextSource = contextSource
         self.diagnosticGatewayMeasuring = diagnosticGatewayMeasuring
@@ -406,7 +402,6 @@ final class NetworkDiagnosticsViewModel {
             let checks = checksForRun(context: context)
             let runner = DiagnosticRunner(
                 checks: checks,
-                minimumStepDuration: minimumStepDuration,
                 sessionBudget: Self.defaultSessionBudget,
                 clock: clock
             )
@@ -485,19 +480,30 @@ final class NetworkDiagnosticsViewModel {
     private func boundedFingerprintObservation(
         until deadline: ContinuousClock.Instant
     ) async -> NetworkFingerprintObservation? {
-        let observationTask = Task {
-            await fingerprintMonitor.observation()
-        }
-        return await withTaskGroup(of: NetworkFingerprintObservation?.self) { group in
-            group.addTask { await observationTask.value }
-            group.addTask {
-                try? await self.clock.sleep(until: deadline)
-                observationTask.cancel()
-                return nil
+        let gate = NetworkFingerprintObservationCompletionGate()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                guard gate.install(continuation: continuation) else { return }
+
+                let observationTask = Task { [fingerprintMonitor, gate] in
+                    gate.finish(await fingerprintMonitor.observation())
+                }
+                let timeoutTask = Task { [clock, gate] in
+                    do {
+                        try await clock.sleep(until: deadline)
+                    } catch {
+                        return
+                    }
+                    guard !Task.isCancelled else { return }
+                    gate.finish(nil)
+                }
+                gate.install(
+                    observationTask: observationTask,
+                    timeoutTask: timeoutTask
+                )
             }
-            let observation = await group.next() ?? nil
-            group.cancelAll()
-            return observation
+        } onCancel: {
+            gate.cancel()
         }
     }
 
@@ -607,6 +613,71 @@ final class NetworkDiagnosticsViewModel {
         if outcome.endReason == .completed, conclusion != nil {
             guidance.record(.diagnosticsCompleted)
         }
+    }
+}
+
+private final class NetworkFingerprintObservationCompletionGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<NetworkFingerprintObservation?, Never>?
+    private var observationTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
+    private var storedResult: NetworkFingerprintObservation?
+    private var didFinish = false
+
+    func install(
+        continuation: CheckedContinuation<NetworkFingerprintObservation?, Never>
+    ) -> Bool {
+        lock.lock()
+        guard !didFinish else {
+            let result = storedResult
+            lock.unlock()
+            continuation.resume(returning: result)
+            return false
+        }
+        self.continuation = continuation
+        lock.unlock()
+        return true
+    }
+
+    func install(
+        observationTask: Task<Void, Never>,
+        timeoutTask: Task<Void, Never>
+    ) {
+        lock.lock()
+        self.observationTask = observationTask
+        self.timeoutTask = timeoutTask
+        let shouldCancel = didFinish
+        lock.unlock()
+
+        if shouldCancel {
+            observationTask.cancel()
+            timeoutTask.cancel()
+        }
+    }
+
+    func finish(_ result: NetworkFingerprintObservation?) {
+        lock.lock()
+        guard !didFinish else {
+            lock.unlock()
+            return
+        }
+        didFinish = true
+        storedResult = result
+        let continuation = self.continuation
+        self.continuation = nil
+        let observationTask = self.observationTask
+        let timeoutTask = self.timeoutTask
+        self.observationTask = nil
+        self.timeoutTask = nil
+        lock.unlock()
+
+        observationTask?.cancel()
+        timeoutTask?.cancel()
+        continuation?.resume(returning: result)
+    }
+
+    func cancel() {
+        finish(nil)
     }
 }
 

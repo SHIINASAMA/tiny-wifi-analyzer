@@ -61,7 +61,9 @@ actor SystemGatewayPingProcessRunner: GatewayPingProcessRunning {
         } onCancel: {
             state.terminate()
         }
-        currentState = nil
+        if currentState === state {
+            currentState = nil
+        }
 
         guard status == 0, !Task.isCancelled else { return nil }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
