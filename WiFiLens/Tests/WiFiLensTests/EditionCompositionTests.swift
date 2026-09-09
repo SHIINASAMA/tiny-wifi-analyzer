@@ -284,6 +284,7 @@ struct EditionCompositionTests {
         let replyProbe = TerminationBoolProbe()
         var steps: [String] = []
         let coordinator = ApplicationTerminationCoordinator(
+            terminationDeadline: .seconds(60),
             waitForDeadline: { duration in
                 try await Task.sleep(for: duration)
             },
