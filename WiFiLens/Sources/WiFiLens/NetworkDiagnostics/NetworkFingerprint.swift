@@ -3,6 +3,90 @@ import Foundation
 import Network
 import SystemConfiguration
 
+struct NetworkFingerprintRouteState: Equatable, Sendable {
+    let interfaceName: String?
+    let interfaceIndex: UInt32?
+    let gateway: String?
+    let addresses: [String]
+    let subnets: [String]
+    let ipv4PrimaryServiceIdentity: String?
+    let ipv6PrimaryServiceIdentity: String?
+
+    init(
+        interfaceName: String?,
+        interfaceIndex: UInt32?,
+        gateway: String?,
+        addresses: [String] = [],
+        subnets: [String] = [],
+        ipv4PrimaryServiceIdentity: String? = nil,
+        ipv6PrimaryServiceIdentity: String? = nil
+    ) {
+        self.interfaceName = interfaceName
+        self.interfaceIndex = interfaceIndex
+        self.gateway = gateway
+        self.addresses = Array(Set(addresses)).sorted()
+        self.subnets = Array(Set(subnets)).sorted()
+        self.ipv4PrimaryServiceIdentity = ipv4PrimaryServiceIdentity
+        self.ipv6PrimaryServiceIdentity = ipv6PrimaryServiceIdentity
+    }
+}
+
+protocol NetworkFingerprintRouteStateSourcing: Sendable {
+    func currentState() async -> NetworkFingerprintRouteState?
+}
+
+struct SystemNetworkFingerprintRouteStateSource: NetworkFingerprintRouteStateSourcing {
+    private let routeSource: any DiagnosticRouteSourcing
+    private let interfaceSource: any NetworkInterfaceSnapshotSourcing
+
+    init(
+        routeSource: any DiagnosticRouteSourcing = SystemDiagnosticRouteSource(),
+        interfaceSource: any NetworkInterfaceSnapshotSourcing = SystemNetworkInterfaceSnapshotSource()
+    ) {
+        self.routeSource = routeSource
+        self.interfaceSource = interfaceSource
+    }
+
+    func currentState() async -> NetworkFingerprintRouteState? {
+        let route = await routeSource.currentRoute(timeout: .milliseconds(250))
+        let snapshot = await interfaceSource.capture(cycleID: UUID())
+        let primaryServices = Self.primaryServiceIdentities()
+        guard case .selected(let target) = route else {
+            return NetworkFingerprintRouteState(
+                interfaceName: nil,
+                interfaceIndex: nil,
+                gateway: nil,
+                ipv4PrimaryServiceIdentity: primaryServices.ipv4,
+                ipv6PrimaryServiceIdentity: primaryServices.ipv6
+            )
+        }
+        let selectedInterface = snapshot.interfaces.first { $0.interfaceName == target.interfaceName }
+        return NetworkFingerprintRouteState(
+            interfaceName: target.interfaceName,
+            interfaceIndex: target.interfaceIndex,
+            gateway: target.address,
+            addresses: selectedInterface?.ipv4Addresses ?? [],
+            subnets: selectedInterface?.subnetMasks ?? [],
+            ipv4PrimaryServiceIdentity: primaryServices.ipv4,
+            ipv6PrimaryServiceIdentity: primaryServices.ipv6
+        )
+    }
+
+    private static func primaryServiceIdentities() -> (
+        ipv4: String?,
+        ipv6: String?
+    ) {
+        let store = SCDynamicStoreCreate(nil, "WiFiLens" as CFString, nil, nil)
+        func value(for key: String) -> String? {
+            (SCDynamicStoreCopyValue(store, key as CFString) as? [String: Any])?["PrimaryService"] as? String
+        }
+        return (
+            value(for: "State:/Network/Global/IPv4"),
+            value(for: "State:/Network/Global/IPv6")
+        )
+    }
+}
+
 struct NetworkFingerprint: Equatable, Sendable {
     let interfaceType: String?
     let interfaceName: String?
@@ -11,6 +95,12 @@ struct NetworkFingerprint: Equatable, Sendable {
     let staticProxySettingsHash: UInt64
     let tunnelInterfaces: [String]
     let routedTunnelInterface: String?
+    let selectedInterfaceIndex: UInt32?
+    let selectedInterfaceAddresses: [String]
+    let selectedInterfaceSubnets: [String]
+    let selectedGateway: String?
+    let ipv4PrimaryServiceIdentity: String?
+    let ipv6PrimaryServiceIdentity: String?
 
     init(
         interfaceType: String?,
@@ -19,15 +109,52 @@ struct NetworkFingerprint: Equatable, Sendable {
         dnsSettingsHash: UInt64,
         staticProxySettingsHash: UInt64,
         tunnelInterfaces: [String] = [],
-        routedTunnelInterface: String? = nil
+        routedTunnelInterface: String? = nil,
+        selectedInterfaceIndex: UInt32? = nil,
+        selectedInterfaceAddresses: [String] = [],
+        selectedInterfaceSubnets: [String] = [],
+        selectedGateway: String? = nil,
+        ipv4PrimaryServiceIdentity: String? = nil,
+        ipv6PrimaryServiceIdentity: String? = nil
     ) {
         self.interfaceType = interfaceType
         self.interfaceName = interfaceName
         self.pathStatus = pathStatus
         self.dnsSettingsHash = dnsSettingsHash
         self.staticProxySettingsHash = staticProxySettingsHash
-        self.tunnelInterfaces = tunnelInterfaces
+        self.tunnelInterfaces = Self.normalized(tunnelInterfaces)
         self.routedTunnelInterface = routedTunnelInterface
+        self.selectedInterfaceIndex = selectedInterfaceIndex
+        self.selectedInterfaceAddresses = Self.normalized(selectedInterfaceAddresses)
+        self.selectedInterfaceSubnets = Self.normalized(selectedInterfaceSubnets)
+        self.selectedGateway = selectedGateway
+        self.ipv4PrimaryServiceIdentity = ipv4PrimaryServiceIdentity
+        self.ipv6PrimaryServiceIdentity = ipv6PrimaryServiceIdentity
+    }
+
+    private static func normalized(_ values: [String]) -> [String] {
+        Array(Set(values)).sorted()
+    }
+
+    func restartReason(comparedWith previous: Self) -> DiagnosticRestartReason {
+        if interfaceName != previous.interfaceName
+            || selectedInterfaceIndex != previous.selectedInterfaceIndex
+            || selectedGateway != previous.selectedGateway
+            || ipv4PrimaryServiceIdentity != previous.ipv4PrimaryServiceIdentity
+            || ipv6PrimaryServiceIdentity != previous.ipv6PrimaryServiceIdentity {
+            return .route
+        }
+        if selectedInterfaceAddresses != previous.selectedInterfaceAddresses
+            || selectedInterfaceSubnets != previous.selectedInterfaceSubnets {
+            return .address
+        }
+        if dnsSettingsHash != previous.dnsSettingsHash {
+            return .dns
+        }
+        if staticProxySettingsHash != previous.staticProxySettingsHash {
+            return .proxy
+        }
+        return .path
     }
 }
 
@@ -57,19 +184,37 @@ struct NetworkPathFingerprint: Equatable, Sendable {
     let pathStatus: NetworkPathState
     let tunnelInterfaces: [String]
     let routedTunnelInterface: String?
+    let selectedInterfaceIndex: UInt32?
+    let selectedInterfaceAddresses: [String]
+    let selectedInterfaceSubnets: [String]
+    let selectedGateway: String?
+    let ipv4PrimaryServiceIdentity: String?
+    let ipv6PrimaryServiceIdentity: String?
 
     init(
         interfaceType: String?,
         interfaceName: String?,
         pathStatus: NetworkPathState,
         tunnelInterfaces: [String] = [],
-        routedTunnelInterface: String? = nil
+        routedTunnelInterface: String? = nil,
+        selectedInterfaceIndex: UInt32? = nil,
+        selectedInterfaceAddresses: [String] = [],
+        selectedInterfaceSubnets: [String] = [],
+        selectedGateway: String? = nil,
+        ipv4PrimaryServiceIdentity: String? = nil,
+        ipv6PrimaryServiceIdentity: String? = nil
     ) {
         self.interfaceType = interfaceType
         self.interfaceName = interfaceName
         self.pathStatus = pathStatus
-        self.tunnelInterfaces = tunnelInterfaces
+        self.tunnelInterfaces = Array(Set(tunnelInterfaces)).sorted()
         self.routedTunnelInterface = routedTunnelInterface
+        self.selectedInterfaceIndex = selectedInterfaceIndex
+        self.selectedInterfaceAddresses = Array(Set(selectedInterfaceAddresses)).sorted()
+        self.selectedInterfaceSubnets = Array(Set(selectedInterfaceSubnets)).sorted()
+        self.selectedGateway = selectedGateway
+        self.ipv4PrimaryServiceIdentity = ipv4PrimaryServiceIdentity
+        self.ipv6PrimaryServiceIdentity = ipv6PrimaryServiceIdentity
     }
 }
 
@@ -227,17 +372,20 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
     private let pathSource: any NetworkPathFingerprintSourcing
     private let settingsPoller: any NetworkFingerprintSettingsPolling
     private let settingsPollInterval: Duration
+    private let routeStateSource: (any NetworkFingerprintRouteStateSourcing)?
 
     init(
         settingsReader: any NetworkFingerprintSettingsReading = SystemNetworkFingerprintSettingsReader(),
         pathSource: any NetworkPathFingerprintSourcing = SystemNetworkPathFingerprintSource(),
         settingsPoller: any NetworkFingerprintSettingsPolling = SystemNetworkFingerprintSettingsPoller(),
-        settingsPollInterval: Duration = .milliseconds(250)
+        settingsPollInterval: Duration = .milliseconds(250),
+        routeStateSource: (any NetworkFingerprintRouteStateSourcing)? = nil
     ) {
         self.settingsReader = settingsReader
         self.pathSource = pathSource
         self.settingsPoller = settingsPoller
         self.settingsPollInterval = settingsPollInterval
+        self.routeStateSource = routeStateSource
     }
 
     func observation() async -> NetworkFingerprintObservation? {
@@ -245,7 +393,7 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
         var pathIterator = pathStream.makeAsyncIterator()
         guard let baselinePath = await pathIterator.next() else { return nil }
 
-        let baseline = fingerprint(path: baselinePath)
+        let baseline = await fingerprint(path: baselinePath)
         let remainingPathIterator = NetworkPathFingerprintIterator(pathIterator)
         let emissionState = NetworkFingerprintEmissionState(baseline: baseline)
         let streamPair = AsyncStream<NetworkFingerprint>.makeStream()
@@ -254,7 +402,7 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
                 group.addTask {
                     while let path = await remainingPathIterator.next() {
                         guard !Task.isCancelled else { return }
-                        let fingerprint = fingerprint(path: path)
+                        let fingerprint = await fingerprint(path: path)
                         if let emitted = await emissionState.receivePath(fingerprint) {
                             streamPair.continuation.yield(emitted)
                         }
@@ -265,7 +413,8 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
                         guard !Task.isCancelled else { return }
                         if let fingerprint = await emissionState.receiveSettings(
                             dnsSettingsHash: settingsReader.dnsSettingsHash(),
-                            staticProxySettingsHash: settingsReader.staticProxySettingsHash()
+                            staticProxySettingsHash: settingsReader.staticProxySettingsHash(),
+                            routeState: await routeStateSource?.currentState()
                         ) {
                             streamPair.continuation.yield(fingerprint)
                         }
@@ -282,15 +431,22 @@ struct SystemNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
         )
     }
 
-    private func fingerprint(path: NetworkPathFingerprint) -> NetworkFingerprint {
-        NetworkFingerprint(
+    private func fingerprint(path: NetworkPathFingerprint) async -> NetworkFingerprint {
+        let routeState = await routeStateSource?.currentState()
+        return NetworkFingerprint(
             interfaceType: path.interfaceType,
             interfaceName: path.interfaceName,
             pathStatus: path.pathStatus,
             dnsSettingsHash: settingsReader.dnsSettingsHash(),
             staticProxySettingsHash: settingsReader.staticProxySettingsHash(),
             tunnelInterfaces: path.tunnelInterfaces,
-            routedTunnelInterface: path.routedTunnelInterface
+            routedTunnelInterface: path.routedTunnelInterface,
+            selectedInterfaceIndex: routeState?.interfaceIndex ?? path.selectedInterfaceIndex,
+            selectedInterfaceAddresses: routeState?.addresses ?? path.selectedInterfaceAddresses,
+            selectedInterfaceSubnets: routeState?.subnets ?? path.selectedInterfaceSubnets,
+            selectedGateway: routeState?.gateway ?? path.selectedGateway,
+            ipv4PrimaryServiceIdentity: routeState?.ipv4PrimaryServiceIdentity ?? path.ipv4PrimaryServiceIdentity,
+            ipv6PrimaryServiceIdentity: routeState?.ipv6PrimaryServiceIdentity ?? path.ipv6PrimaryServiceIdentity
         )
     }
 }
@@ -322,7 +478,8 @@ private actor NetworkFingerprintEmissionState {
 
     func receiveSettings(
         dnsSettingsHash: UInt64,
-        staticProxySettingsHash: UInt64
+        staticProxySettingsHash: UInt64,
+        routeState: NetworkFingerprintRouteState? = nil
     ) -> NetworkFingerprint? {
         guard
             dnsSettingsHash != latest.dnsSettingsHash
@@ -337,7 +494,13 @@ private actor NetworkFingerprintEmissionState {
             dnsSettingsHash: dnsSettingsHash,
             staticProxySettingsHash: staticProxySettingsHash,
             tunnelInterfaces: latest.tunnelInterfaces,
-            routedTunnelInterface: latest.routedTunnelInterface
+            routedTunnelInterface: latest.routedTunnelInterface,
+            selectedInterfaceIndex: routeState?.interfaceIndex ?? latest.selectedInterfaceIndex,
+            selectedInterfaceAddresses: routeState?.addresses ?? latest.selectedInterfaceAddresses,
+            selectedInterfaceSubnets: routeState?.subnets ?? latest.selectedInterfaceSubnets,
+            selectedGateway: routeState?.gateway ?? latest.selectedGateway,
+            ipv4PrimaryServiceIdentity: routeState?.ipv4PrimaryServiceIdentity ?? latest.ipv4PrimaryServiceIdentity,
+            ipv6PrimaryServiceIdentity: routeState?.ipv6PrimaryServiceIdentity ?? latest.ipv6PrimaryServiceIdentity
         )
         latest = fingerprint
         return fingerprint

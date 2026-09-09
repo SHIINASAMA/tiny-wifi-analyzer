@@ -231,10 +231,15 @@ struct NetworkProxyEndpointConnector: ProxyEndpointConnecting {
                     }
                 }
                 connection.start(queue: DispatchQueue(label: "io.github.kaoru.wifi-lens.network-diagnostics.proxy"))
-                Task {
-                    try? await Task.sleep(for: timeout)
-                    context.finish(false)
+                let timeoutTask = Task { [context] in
+                    do {
+                        try await Task.sleep(for: timeout)
+                        context.finish(false)
+                    } catch {
+                        // The connection completed or the caller cancelled.
+                    }
                 }
+                context.install(timeoutTask: timeoutTask)
             }
         } onCancel: {
             context.cancel()
@@ -247,6 +252,8 @@ private final class ProxyConnectionContext: @unchecked Sendable {
     private let connection: NWConnection
     private var continuation: CheckedContinuation<Bool, Never>?
     private var cancellationRequested = false
+    private var didFinish = false
+    private var timeoutTask: Task<Void, Never>?
 
     init(connection: NWConnection) {
         self.connection = connection
@@ -254,7 +261,7 @@ private final class ProxyConnectionContext: @unchecked Sendable {
 
     func install(continuation: CheckedContinuation<Bool, Never>) -> Bool {
         lock.lock()
-        guard !cancellationRequested else {
+        guard !cancellationRequested, !didFinish else {
             lock.unlock()
             continuation.resume(returning: false)
             return false
@@ -264,16 +271,33 @@ private final class ProxyConnectionContext: @unchecked Sendable {
         return true
     }
 
+    func install(timeoutTask: Task<Void, Never>) {
+        lock.lock()
+        if didFinish {
+            lock.unlock()
+            timeoutTask.cancel()
+            return
+        }
+        self.timeoutTask = timeoutTask
+        lock.unlock()
+    }
+
     func finish(_ reachable: Bool) {
         lock.lock()
-        guard let continuation else {
+        guard !didFinish else {
             lock.unlock()
             return
         }
+        didFinish = true
+        let continuation = self.continuation
         self.continuation = nil
+        let timeoutTask = self.timeoutTask
+        self.timeoutTask = nil
         lock.unlock()
+        timeoutTask?.cancel()
+        connection.stateUpdateHandler = nil
         connection.cancel()
-        continuation.resume(returning: reachable)
+        continuation?.resume(returning: reachable)
     }
 
     func cancel() {
@@ -707,26 +731,33 @@ struct SystemProxyCheck: DiagnosticCheck {
     private func aggregate(_ routes: [ProxyTargetRouteResult]) -> NetworkDiagnosticResult {
         let statuses = routes.map(\.status)
         let evidence = routes.flatMap(\.evidence)
+        let proxyFacts = DiagnosticProxyFacts(
+            http: routes.first(where: { $0.target.scheme?.lowercased() == "http" })?.diagnosticAvailability ?? .unverified,
+            https: routes.first(where: { $0.target.scheme?.lowercased() == "https" })?.diagnosticAvailability ?? .unverified
+        )
 
         if statuses.contains(.authenticationRequired) {
             return result(
                 .abnormal,
                 key: "network_diagnostics.proxy.authentication_required.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         if statuses.contains(.unavailable) {
             return result(
                 .abnormal,
                 key: "network_diagnostics.proxy.route_unavailable.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         if statuses.contains(.indeterminate) {
             return result(
                 .indeterminate,
                 key: "network_diagnostics.proxy.unable_to_determine.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         if statuses.allSatisfy({ $0 == .tunnel || $0 == .direct }),
@@ -740,40 +771,46 @@ struct SystemProxyCheck: DiagnosticCheck {
                 key: nwPathConfirmed
                     ? "network_diagnostics.proxy.tunnel_routes.summary"
                     : "network_diagnostics.proxy.tunnel_routes_active.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         if statuses.allSatisfy({ $0 == .direct }) {
             return result(
                 .indeterminate,
                 key: "network_diagnostics.proxy.direct_routes.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         if statuses.allSatisfy({ $0 == .proxied }) {
             return result(
                 .normal,
                 key: "network_diagnostics.proxy.routes_available.summary",
-                evidence: evidence
+                evidence: evidence,
+                proxyFacts: proxyFacts
             )
         }
         return result(
             .indeterminate,
             key: "network_diagnostics.proxy.mixed_routing.summary",
-            evidence: evidence
+            evidence: evidence,
+            proxyFacts: proxyFacts
         )
     }
 
     private func result(
         _ status: NetworkDiagnosticStatus,
         key: String.LocalizationValue,
-        evidence: [NetworkDiagnosticEvidence] = []
+        evidence: [NetworkDiagnosticEvidence] = [],
+        proxyFacts: DiagnosticProxyFacts? = nil
     ) -> NetworkDiagnosticResult {
         NetworkDiagnosticResult(
             id: id,
             status: status,
             summary: String(localized: key, comment: "Network self-check system proxy result summary"),
-            evidence: evidence
+            evidence: evidence,
+            proxyFacts: proxyFacts
         )
     }
 }

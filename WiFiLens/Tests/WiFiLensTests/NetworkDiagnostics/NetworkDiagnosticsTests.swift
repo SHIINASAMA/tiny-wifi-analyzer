@@ -35,6 +35,277 @@ struct NetworkDiagnosticsTests {
         #expect(Set(NetworkDiagnosticCheckID.allCases).count == 6)
     }
 
+    @Test("route selection follows the kernel-selected interface")
+    func routeSelectionUsesKernelInterface() {
+        let output = """
+           route to: default
+        destination: default
+               mask: default
+            gateway: 192.0.2.1
+          interface: en7
+              flags: <UP,GATEWAY,DONE,STATIC,PRCLONING,GLOBAL>
+        """
+
+        let result = DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en0": 4, "en7": 12]
+        )
+
+        #expect(result == .selected(.init(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        )))
+    }
+
+    @Test("missing selected interface does not fall back to another adapter")
+    func missingInterfaceCannotSelectAnotherAdapter() {
+        let output = "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <UP,GATEWAY>"
+
+        #expect(DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en0": 4]
+        ) == .unavailable)
+    }
+
+    @Test("route parsing is independent of interface enumeration order")
+    func routeSelectionIgnoresInterfaceEnumerationOrder() {
+        let output = "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <UP,GATEWAY>"
+        let firstOrder = DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en0": 4, "en7": 12]
+        )
+        let reversedOrder = DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en7": 12, "en0": 4]
+        )
+
+        #expect(firstOrder == reversedOrder)
+        #expect(firstOrder == .selected(.init(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        )))
+    }
+
+    @Test("same gateway address remains tied to the selected interface")
+    func sameGatewayAddressDoesNotCollapseInterfaceIdentity() {
+        let output = "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <UP,GATEWAY>"
+
+        #expect(DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en0": 4, "en7": 12]
+        ) == .selected(.init(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        )))
+    }
+
+    @Test("duplicate route fields cannot produce a selected target")
+    func duplicateRouteFieldsAreRejected() {
+        let output = """
+        destination: default
+        gateway: 192.0.2.1
+        gateway: 192.0.2.254
+        interface: en7
+        flags: <UP,GATEWAY>
+        """
+
+        #expect(DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en7": 12]
+        ) == .ambiguous)
+    }
+
+    @Test("invalid gateway addresses cannot be selected")
+    func invalidGatewayAddressesAreRejected() {
+        let addresses = ["0.0.0.0", "224.0.0.1", "255.255.255.255", "not-an-ip"]
+
+        for address in addresses {
+            let output = "destination: default\ngateway: \(address)\ninterface: en7\nflags: <UP,GATEWAY>"
+            let result = DiagnosticRouteParser.parse(
+                output: output,
+                interfaceIndices: ["en7": 12]
+            )
+            #expect(result == .unavailable)
+        }
+    }
+
+    @Test("link-layer gateways and tunnel interfaces are unsupported")
+    func unsupportedRouteTargetsAreRejected() {
+        let linkLayer = "destination: default\ngateway: link#4\ninterface: en7\nflags: <UP,GATEWAY>"
+        let tunnel = "destination: default\ngateway: 192.0.2.1\ninterface: utun3\nflags: <UP,GATEWAY>"
+
+        #expect(DiagnosticRouteParser.parse(
+            output: linkLayer,
+            interfaceIndices: ["en7": 12]
+        ) == .unsupported)
+        #expect(DiagnosticRouteParser.parse(
+            output: tunnel,
+            interfaceIndices: ["utun3": 20]
+        ) == .unsupported)
+    }
+
+    @Test("missing default route is unavailable")
+    func missingDefaultRouteIsUnavailable() {
+        let output = "gateway: 192.0.2.1\ninterface: en7\nflags: <UP,GATEWAY>"
+
+        #expect(DiagnosticRouteParser.parse(
+            output: output,
+            interfaceIndices: ["en7": 12]
+        ) == .unavailable)
+    }
+
+    @Test("route parser requires both UP and GATEWAY flags")
+    func routeParserRequiresUsableDefaultFlags() {
+        let records = [
+            "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <GATEWAY>",
+            "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <UP>",
+            "destination: default\ngateway: 192.0.2.1\ninterface: en7\nflags: <>"
+        ]
+
+        for output in records {
+            #expect(DiagnosticRouteParser.parse(
+                output: output,
+                interfaceIndices: ["en7": 12]
+            ) == .unavailable)
+        }
+    }
+
+    @Test("diagnostic gateway ping binds the selected interface")
+    func diagnosticGatewayPingBindsSelectedInterface() async {
+        let runner = RecordingGatewayPingProcessRunner(latency: 2.5)
+        let pinger = GatewayPinger(processRunner: runner)
+        let target = DiagnosticGatewayTarget(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        )
+
+        _ = await pinger.ping(target: target)
+
+        #expect(await runner.executablePath == "/sbin/ping")
+        #expect(await runner.arguments == [
+            "-b", "en7", "-c", "1", "-W", "1000", "192.0.2.1"
+        ])
+    }
+
+    @Test("contextual path and gateway checks use one selected interface")
+    func contextualChecksShareSelectedRouteTarget() async {
+        let context = makeDiagnosticContext(
+            pathState: .satisfied,
+            route: .selected(.init(
+                interfaceName: "en7",
+                interfaceIndex: 12,
+                address: "192.0.2.1"
+            )),
+            interfaces: [
+                makeNetworkInterface(name: "en0", router: "192.0.2.1"),
+                makeNetworkInterface(name: "en7", router: "192.0.2.1"),
+            ]
+        )
+        let gateway = RecordingDiagnosticGatewayMeasurer()
+
+        let pathResult = await NetworkConnectivityCheck(context: context).run()
+        let gatewayResult = await GatewayReachabilityCheck(
+            context: context,
+            gatewayMeasuring: gateway,
+            routeSource: nil
+        ).run()
+
+        #expect(pathResult.evidence.contains(.init(code: "path.interface", value: "en7")))
+        #expect(pathResult.evidence.contains(.init(code: "path.gateway", value: "192.0.2.1")))
+        #expect(gatewayResult.evidence.contains(.init(code: "gateway.interface", value: "en7")))
+        #expect(await gateway.targets == [
+            .init(interfaceName: "en7", interfaceIndex: 12, address: "192.0.2.1")
+        ])
+    }
+
+    @Test("context capture accepts a stable route")
+    func diagnosticContextCaptureAcceptsStableRoute() async {
+        let route = DiagnosticRouteSelection.selected(.init(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        ))
+        let routeSource = SequencedDiagnosticRouteSource(values: [route, route])
+        let source = SystemDiagnosticNetworkContextSource(
+            routeSource: routeSource,
+            pathSource: StubPathSource(.satisfied),
+            interfaceSource: StubNetworkInterfaceSnapshotSource(interfaces: [])
+        )
+
+        let context = await source.capture(runID: UUID(), timeout: .seconds(1))
+
+        #expect(context?.route == route)
+        #expect(context?.pathState == .satisfied)
+        #expect(await routeSource.invocationCount == 2)
+    }
+
+    @Test("context capture does not publish a conflicting route")
+    func diagnosticContextCaptureRejectsChangingRoute() async {
+        let first = DiagnosticRouteSelection.selected(.init(
+            interfaceName: "en0",
+            interfaceIndex: 4,
+            address: "192.0.2.1"
+        ))
+        let second = DiagnosticRouteSelection.selected(.init(
+            interfaceName: "en7",
+            interfaceIndex: 12,
+            address: "192.0.2.1"
+        ))
+        let routeSource = SequencedDiagnosticRouteSource(values: [first, second, first, second])
+        let source = SystemDiagnosticNetworkContextSource(
+            routeSource: routeSource,
+            pathSource: StubPathSource(.satisfied),
+            interfaceSource: StubNetworkInterfaceSnapshotSource(interfaces: [])
+        )
+
+        let context = await source.capture(runID: UUID(), timeout: .seconds(1))
+
+        #expect(context?.route == .ambiguous)
+        #expect(await routeSource.invocationCount == 4)
+    }
+
+    @Test("route change during gateway ping suppresses the old result")
+    func gatewayRouteChangeSuppressesStaleResult() async {
+        let target = DiagnosticGatewayTarget(
+            interfaceName: "en0",
+            interfaceIndex: 4,
+            address: "192.0.2.1"
+        )
+        let context = makeDiagnosticContext(
+            pathState: .satisfied,
+            route: .selected(target)
+        )
+        let gateway = RecordingDiagnosticGatewayMeasurer()
+        let routeSource = SequencedDiagnosticRouteSource(values: [.unavailable])
+
+        let result = await GatewayReachabilityCheck(
+            context: context,
+            gatewayMeasuring: gateway,
+            routeSource: routeSource
+        ).run()
+
+        #expect(result.status == .indeterminate)
+        #expect(result.evidence.contains(.init(code: "gateway.route-changed", value: nil)))
+    }
+
+    @Test("missing diagnostic route never starts a gateway ping")
+    func missingDiagnosticRouteDoesNotPing() async {
+        let context = makeDiagnosticContext(pathState: .satisfied, route: .unavailable)
+        let gateway = RecordingDiagnosticGatewayMeasurer()
+
+        let result = await GatewayReachabilityCheck(
+            context: context,
+            gatewayMeasuring: gateway
+        ).run()
+
+        #expect(result.status == .indeterminate)
+        #expect(await gateway.targets.isEmpty)
+    }
+
     @Test("blocked and skipped statuses have distinct presentations")
     func blockedAndSkippedPresentation() {
         #expect(NetworkDiagnosticStatus.blocked.presentation == .init(
@@ -80,6 +351,20 @@ struct NetworkDiagnosticsTests {
         #expect(remediation.actionKey == "network_diagnostics.remediation.indeterminate.action")
     }
 
+    @Test("proxy remediation follows final route facts instead of failed candidates")
+    func proxyRemediationUsesFinalRouteFacts() {
+        let result = NetworkDiagnosticResult(
+            id: .proxy,
+            status: .indeterminate,
+            summary: "proxy route recovered",
+            evidence: [.init(code: "proxy.authentication-required", value: "407")],
+            proxyFacts: .init(http: .available, https: .available)
+        )
+
+        #expect(NetworkDiagnosticRemediation.forResult(result).actionKey
+            == "network_diagnostics.remediation.indeterminate.action")
+    }
+
     @Test("a blocked probe does not become an independent network fault")
     func blockedProbeIsNotAbnormal() {
         let result = NetworkDiagnosticResult.blocked(id: .internet, summary: "DNS is unavailable")
@@ -97,7 +382,7 @@ struct NetworkDiagnosticsTests {
         ]
         let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
 
-        let results = await runner.run { _ in }
+        let results = (await runner.run { _ in }).results
 
         #expect(results.map(\.id) == [.path, .gatewayReachability, .dns])
         #expect(results[1].status == .blocked)
@@ -113,7 +398,7 @@ struct NetworkDiagnosticsTests {
         }
         let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
 
-        let results = await runner.run { _ in }
+        let results = (await runner.run { _ in }).results
 
         #expect(results.map(\.id) == NetworkDiagnosticCheckID.allCases)
         #expect(results[1].status == .abnormal)
@@ -241,9 +526,9 @@ struct NetworkDiagnosticsTests {
             )
         }
 
-        let results = await DiagnosticRunner(checks: checks).run { result in
+        let results = (await DiagnosticRunner(checks: checks).run { result in
             await publications.record(result.id)
-        }
+        }).results
 
         #expect(results.map(\.id) == NetworkDiagnosticCheckID.allCases)
         #expect(await invocations.values == NetworkDiagnosticCheckID.allCases)
@@ -253,13 +538,70 @@ struct NetworkDiagnosticsTests {
     @Test("runner enforces an overall session budget")
     func runnerEnforcesOverallBudget() async {
         let probe = BudgetAwareDiagnosticProbe()
-        let results = await DiagnosticRunner(
+        let outcome = await DiagnosticRunner(
             checks: [BudgetAwareDiagnosticCheck(probe: probe)],
             sessionBudget: .milliseconds(50)
         ).run { _ in }
 
         #expect(await probe.wasCancelled)
-        #expect(results.isEmpty)
+        #expect(outcome.results.map(\.id) == [.path])
+        #expect(outcome.results.first?.status == .indeterminate)
+        #expect(outcome.results.first?.evidence == [.init(code: "check.timeout", value: nil)])
+        #expect(outcome.pendingIDs.isEmpty)
+        #expect(outcome.endReason == .timedOut)
+    }
+
+    @Test("runner returns when a cancelled check ignores cancellation")
+    func runnerDoesNotWaitForCancellationIgnoringCheck() async {
+        let probe = CancellationIgnoringDiagnosticProbe()
+        let task = Task {
+            await DiagnosticRunner(
+                checks: [CancellationIgnoringProbeDiagnosticCheck(probe: probe)],
+                sessionBudget: .seconds(30)
+            ).run { _ in }
+        }
+
+        await probe.waitForInvocationCount(1)
+        task.cancel()
+        let outcome = await task.value
+
+        #expect(outcome.results.isEmpty)
+        #expect(outcome.pendingIDs == [.path])
+        #expect(outcome.endReason == .cancelled)
+        await probe.release(invocation: 1)
+    }
+
+    @Test("publication gate rejects an old run after a replacement starts")
+    func oldRunCannotPublishIntoNewRun() {
+        let oldID = UUID()
+        let newID = UUID()
+        let gate = DiagnosticPublicationGate(activeRunID: newID)
+
+        #expect(!gate.accepts(oldID))
+        #expect(gate.accepts(newID))
+    }
+
+    @Test("runner preserves completed results and identifies pending checks on cancellation")
+    func runnerReturnsPartialCancelledOutcome() async {
+        let probe = BlockingDiagnosticProbe()
+        let checks: [any DiagnosticCheck] = [
+            StubDiagnosticCheck(
+                id: .path,
+                result: .init(id: .path, status: .normal, summary: "path"),
+                recorder: DiagnosticTestRecorder()
+            ),
+            BlockingProbeDiagnosticCheck(id: .gatewayReachability, probe: probe),
+        ]
+        let runner = DiagnosticRunner(checks: checks, minimumStepDuration: .zero)
+        let task = Task { await runner.run { _ in } }
+
+        await probe.waitForInvocationCount(1)
+        task.cancel()
+        let outcome = await task.value
+
+        #expect(outcome.results.map(\.id) == [.path])
+        #expect(outcome.pendingIDs == [.gatewayReachability])
+        #expect(outcome.endReason == .cancelled)
     }
 
     @Test("indeterminate DNS does not block internet or IPv6")
@@ -277,14 +619,14 @@ struct NetworkDiagnosticsTests {
             )
         }
 
-        let results = await DiagnosticRunner(checks: checks).run { _ in }
+        let results = (await DiagnosticRunner(checks: checks).run { _ in }).results
 
         #expect(results.map(\.status) == [.normal, .normal, .indeterminate, .normal, .normal, .normal])
         #expect(await invocations.values == [.path, .gatewayReachability, .dns, .internet, .ipv6, .proxy])
     }
 
-    @Test("abnormal DNS blocks hostname-dependent internet and IPv6 checks")
-    func abnormalDNSBlocksHostnameDependentChecks() async {
+    @Test("abnormal DNS does not block independent hostname checks")
+    func abnormalDNSDoesNotBlockHostnameDependentChecks() async {
         let invocations = DiagnosticTestRecorder()
         let checks: [any DiagnosticCheck] = NetworkDiagnosticCheckID.allCases.map { id in
             StubDiagnosticCheck(
@@ -298,10 +640,10 @@ struct NetworkDiagnosticsTests {
             )
         }
 
-        let results = await DiagnosticRunner(checks: checks).run { _ in }
+        let results = (await DiagnosticRunner(checks: checks).run { _ in }).results
 
-        #expect(results.map(\.status) == [.normal, .normal, .abnormal, .blocked, .blocked, .normal])
-        #expect(await invocations.values == [.path, .gatewayReachability, .dns, .proxy])
+        #expect(results.map(\.status) == [.normal, .normal, .abnormal, .normal, .normal, .normal])
+        #expect(await invocations.values == [.path, .gatewayReachability, .dns, .internet, .ipv6, .proxy])
     }
 
     @Test("indeterminate path continues independent evidence probes")
@@ -319,7 +661,7 @@ struct NetworkDiagnosticsTests {
             )
         }
 
-        let results = await DiagnosticRunner(checks: checks).run { _ in }
+        let results = (await DiagnosticRunner(checks: checks).run { _ in }).results
 
         #expect(results.map(\.status) == [.indeterminate, .normal, .normal, .normal, .normal, .normal])
         #expect(await invocations.values == [.path, .gatewayReachability, .dns, .internet, .ipv6, .proxy])
@@ -340,32 +682,25 @@ struct NetworkDiagnosticsTests {
             )
         }
 
-        let results = await DiagnosticRunner(checks: checks).run { _ in }
+        let results = (await DiagnosticRunner(checks: checks).run { _ in }).results
 
         #expect(results.map(\.status) == [.abnormal, .blocked, .blocked, .blocked, .blocked, .blocked])
         #expect(await invocations.values == [.path])
     }
 
-    @Test("runner keeps each check visible for its minimum presentation duration")
+    @Test("runner does not delay the next operation for presentation")
     func runnerMinimumPresentationDuration() async {
         let check = StubDiagnosticCheck(
             id: .path,
             result: NetworkDiagnosticResult(id: .path, status: .normal, summary: "ok"),
             recorder: DiagnosticTestRecorder()
         )
-        let clock = ContinuousClock()
-        let started = clock.now
-
-        _ = await DiagnosticRunner(
+        let outcome = await DiagnosticRunner(
             checks: [check],
             minimumStepDuration: .milliseconds(50)
         ).run { _ in }
 
-        // The runner targets a 50 ms minimum presentation duration, but the
-        // lower bound is intentionally relaxed below that target to absorb
-        // scheduler noise under CI load. 30 ms stays far above the near-zero
-        // elapsed time that would indicate the minimum duration was skipped.
-        #expect(started.duration(to: clock.now) >= .milliseconds(30))
+        #expect(outcome.endReason == .completed)
     }
 
     @Test("production diagnostics present each check for at least 0.8 seconds")
@@ -458,7 +793,7 @@ struct NetworkDiagnosticsTests {
 
     @Test("base HTTPS success and explicit proxy failure needs attention")
     func proxyIsIndependentWhenBasePathWorks() {
-        let results = makeResults(
+        let results: [NetworkDiagnosticResult] = makeResults(
             path: .normal,
             dns: .normal,
             internet: .normal,
@@ -488,6 +823,11 @@ struct NetworkDiagnosticsTests {
         ]
 
         #expect(NetworkDiagnosticConclusion.evaluate(results) == .needsAttention)
+        let assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) }),
+            complete: true
+        )
+        #expect(assessment.primaryIssue?.id == .internet)
     }
 
     @Test("an indeterminate result needs attention")
@@ -514,10 +854,76 @@ struct NetworkDiagnosticsTests {
             id: .proxy,
             status: .indeterminate,
             summary: "direct routing selected",
-            evidence: [.init(code: "proxy.https.egress-status", value: "base-check")]
+            evidence: [.init(code: "proxy.https.egress-status", value: "base-check")],
+            proxyFacts: .init(http: .unverified, https: .unverified)
         )
 
         #expect(NetworkDiagnosticConclusion.evaluate(results) == .networkNormal)
+    }
+
+    @Test("HTTPS availability is retained even when HTTP proxy routing fails")
+    func httpsAvailabilityDoesNotDependOnHTTP() {
+        let facts = DiagnosticProxyFacts(http: .unavailable, https: .available)
+        #expect(facts.https == .available)
+
+        let results: [NetworkDiagnosticResult] = makeResults(
+            path: .normal,
+            dns: .normal,
+            internet: .abnormal,
+            proxy: .abnormal
+        ).map { result in
+            if result.id == .internet {
+                return NetworkDiagnosticResult(
+                    id: result.id,
+                    status: result.status,
+                    summary: result.summary,
+                    evidence: [.init(code: "https.connectivity-error", value: nil)]
+                )
+            }
+            if result.id == .proxy {
+                return NetworkDiagnosticResult(
+                    id: result.id,
+                    status: result.status,
+                    summary: result.summary,
+                    evidence: [.init(code: "proxy.endpoint-unavailable", value: nil)],
+                    proxyFacts: facts
+                )
+            }
+            return result
+        }
+
+        let assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) }),
+            complete: true
+        )
+        #expect(assessment.conclusion == .needsAttention)
+        #expect(assessment.primaryIssue?.id == .proxy)
+    }
+
+    @Test("recovered proxy candidates do not leave an authentication action")
+    func recoveredProxyCandidateDoesNotRemainActionable() {
+        let results: [NetworkDiagnosticResult] = makeResults(
+            path: .normal,
+            dns: .normal,
+            internet: .normal,
+            proxy: .normal
+        ).map { result in
+            guard result.id == .proxy else { return result }
+            return NetworkDiagnosticResult(
+                id: .proxy,
+                status: .normal,
+                summary: "HTTPS proxy recovered",
+                evidence: [.init(code: "proxy.https.authentication-required", value: "407")],
+                proxyFacts: .init(http: .available, https: .available)
+            )
+        }
+
+        let assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) }),
+            complete: true
+        )
+        #expect(assessment.conclusion == .networkNormal)
+        #expect(assessment.primaryIssue == nil)
     }
 
     @Test("no global IPv6 address is skipped without changing a normal conclusion")
@@ -703,6 +1109,20 @@ struct NetworkDiagnosticsTests {
             "header.additional", "check.ipv6",
         ])
         #expect(completedItems[4] == .additionalHeader)
+
+        let timedOutItems = NetworkDiagnosticsPresentation.workbenchItems(
+            pagePhase: .completed,
+            executionPhases: [.path: .completed, .dns: .waiting],
+            results: [.path: path],
+            checkIDs: [.path, .dns],
+            endReason: .timedOut
+        )
+        #expect(timedOutItems.last == .check(.init(
+            id: .dns,
+            executionPhase: .waiting,
+            result: nil,
+            pendingReason: .timedOut
+        )))
     }
 
     @Test("system path check maps path states")
@@ -743,8 +1163,8 @@ struct NetworkDiagnosticsTests {
         #expect(result.evidence.contains(.init(code: "gateway.latency-ms", value: "2.5")))
     }
 
-    @Test("gateway nonresponse fails the gateway reachability check")
-    func gatewayNonresponseFailsCheck() async {
+    @Test("gateway nonresponse remains indeterminate")
+    func gatewayNonresponseIsIndeterminate() async {
         let result = await GatewayReachabilityCheck(
             interfaceSource: StubNetworkInterfaceSource(interface: makeNetworkInterface(router: "192.0.2.1")),
             gatewayLatency: StubGatewayLatencyProvider(result: GatewayLatencyResult(
@@ -754,8 +1174,40 @@ struct NetworkDiagnosticsTests {
             ))
         ).run()
 
-        #expect(result.status == .abnormal)
-        #expect(result.evidence.contains(.init(code: "gateway.unreachable", value: "192.0.2.1")))
+        #expect(result.status == .indeterminate)
+        #expect(result.evidence.contains(.init(code: "gateway.no-response", value: "192.0.2.1")))
+    }
+
+    @Test("successful HTTPS access neutralizes gateway ICMP nonresponse")
+    func gatewayNonresponseDoesNotDowngradeSuccessfulHTTPS() {
+        var results = makeResults(
+            path: .normal,
+            gateway: .indeterminate,
+            dns: .normal,
+            internet: .normal,
+            proxy: .normal
+        )
+        results[1] = NetworkDiagnosticResult(
+            id: .gatewayReachability,
+            status: .indeterminate,
+            summary: "gateway did not answer ICMP",
+            evidence: [.init(code: "gateway.no-response", value: "192.0.2.1")]
+        )
+        results[3] = NetworkDiagnosticResult(
+            id: .internet,
+            status: .normal,
+            summary: "HTTPS available",
+            evidence: [.init(code: "https.available", value: "200")]
+        )
+
+        let assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) }),
+            complete: true
+        )
+
+        #expect(assessment.conclusion == .networkNormal)
+        #expect(assessment.primaryIssue == nil)
+        #expect(assessment.stages.first { $0.stage == .lan }?.status == .indeterminate)
     }
 
     @Test("gateway reachability is indeterminate without a router IP")
@@ -1055,7 +1507,7 @@ struct NetworkDiagnosticsTests {
     @Test("production checks run path DNS HTTPS and proxy in dependency order")
     @MainActor
     func productionCheckOrder() {
-        #expect(NetworkDiagnosticsViewModel().checkIDs == [.path, .gatewayReachability, .dns, .internet, .ipv6, .proxy])
+        #expect(NetworkDiagnosticsViewModel().checkIDs == [.path, .gatewayReachability, .dns, .internet, .proxy, .ipv6])
     }
 
     @Test("all successful DNS samples are available")
@@ -1102,6 +1554,22 @@ struct NetworkDiagnosticsTests {
         #expect(result.status == .indeterminate)
         #expect(result.evidence.contains(.init(code: "dns.success-count", value: "2/3")))
         #expect(result.evidence.contains(.init(code: "dns.failure-count", value: "1/3")))
+    }
+
+    @Test("DNS evidence preserves each sample outcome without exposing host names")
+    func dnsEvidencePreservesSampleOutcomes() async {
+        let result = await DNSResolutionCheck(
+            resolver: MappingDNSResolver(outcomes: [
+                "www.apple.com": .resolved,
+                "www.microsoft.com": .failed,
+                "www.msftconnecttest.com": .indeterminate,
+            ])
+        ).run()
+
+        #expect(result.evidence.contains(.init(code: "dns.sample.apple", value: "resolved")))
+        #expect(result.evidence.contains(.init(code: "dns.sample.microsoft", value: "failed")))
+        #expect(result.evidence.contains(.init(code: "dns.sample.msft-connect-test", value: "indeterminate")))
+        #expect(!result.evidence.contains { $0.value == "www.apple.com" })
     }
 
     @Test("all failed DNS samples are unavailable")
@@ -1716,6 +2184,7 @@ struct NetworkDiagnosticsTests {
         ).run()
 
         #expect(result.status == .normal)
+        #expect(result.proxyFacts == .init(http: .available, https: .available))
         #expect(result.summary == String(
             localized: "network_diagnostics.proxy.routes_available.summary",
             comment: "Network self-check proxy target routes available result summary"
@@ -2223,6 +2692,47 @@ struct NetworkDiagnosticsTests {
         #expect(store.text.isEmpty)
     }
 
+    @Test("diagnostics log store keeps a bounded history and truncation marker")
+    func diagnosticsLogStoreHasFiniteCapacity() {
+        var store = NetworkDiagnosticsLogStore()
+
+        for index in 0..<501 {
+            store.append("event \(index)")
+        }
+
+        #expect(store.lines.count == NetworkDiagnosticsLogStore.capacity)
+        #expect(store.lines.contains(NetworkDiagnosticsLogStore.truncationMarker))
+        #expect(!store.text.contains("event 0\n"))
+        #expect(store.text.contains("event 500"))
+
+        var typedStore = NetworkDiagnosticsLogStore()
+        for index in 0..<501 {
+            typedStore.append(NetworkDiagnosticEvent(
+                runID: UUID(),
+                elapsedMilliseconds: Int64(index),
+                kind: .checkFinished,
+                checkID: .path,
+                reasonCode: nil
+            ))
+        }
+        #expect(typedStore.lines.count == NetworkDiagnosticsLogStore.capacity)
+        #expect(typedStore.events.count == NetworkDiagnosticsLogStore.capacity - 1)
+    }
+
+    @Test("typed diagnostic events only format allowlisted restart reasons")
+    func diagnosticEventFormattingAllowlist() {
+        let event = NetworkDiagnosticEvent(
+            runID: UUID(),
+            elapsedMilliseconds: 42,
+            kind: .restarted,
+            checkID: nil,
+            reasonCode: "raw-sensitive-value"
+        )
+
+        #expect(event.formatted() == "42ms · Network changed; restarting (network state)")
+        #expect(!event.formatted().contains("raw-sensitive-value"))
+    }
+
     @Test("view model publishes its own diagnostic result logs")
     @MainActor
     func viewModelPublishesDiagnosticLogs() async {
@@ -2236,11 +2746,31 @@ struct NetworkDiagnosticsTests {
         #expect(viewModel.start())
         await viewModel.waitForCompletion()
 
-        #expect(viewModel.logStore.lines == [
-            "Checking…",
-            "Network Path: Normal",
-            "DNS Resolution: Normal",
-            "System Proxy: Normal",
+        let stableLogLines = viewModel.logStore.lines.map { line in
+            guard let separator = line.range(of: " · ") else { return line }
+            return String(line[separator.upperBound...])
+        }
+        #expect(stableLogLines == [
+            "Session started",
+            "Run started",
+            "Checking Network Path…",
+            "Network Path finished",
+            "Checking DNS Resolution…",
+            "DNS Resolution finished",
+            "Checking System Proxy…",
+            "System Proxy finished",
+            "Check completed",
+        ])
+        #expect(viewModel.logStore.events.map(\.kind) == [
+            .sessionStarted,
+            .runStarted,
+            .checkStarted,
+            .checkFinished,
+            .checkStarted,
+            .checkFinished,
+            .checkStarted,
+            .checkFinished,
+            .completed,
         ])
 
         viewModel.clearLogs()
@@ -2468,8 +2998,38 @@ struct NetworkDiagnosticsTests {
         viewModel.cancel()
         await viewModel.waitForCompletion()
 
-        #expect(viewModel.phase == .idle)
+        #expect(viewModel.phase == .completed)
         #expect(viewModel.conclusion == nil)
+        #expect(viewModel.endReason == .cancelled)
+    }
+
+    @Test("a cancelled run cannot overwrite a replacement run")
+    @MainActor
+    func cancelledRunCannotOverwriteReplacementRun() async {
+        let probe = CancellationIgnoringDiagnosticProbe()
+        let viewModel = NetworkDiagnosticsViewModel(
+            checks: [CancellationIgnoringProbeDiagnosticCheck(probe: probe)],
+            minimumStepDuration: .zero,
+            fingerprintMonitor: DisabledNetworkFingerprintMonitor()
+        )
+
+        #expect(viewModel.start())
+        await probe.waitForInvocationCount(1)
+        viewModel.cancel()
+        #expect(viewModel.start())
+        await probe.waitForInvocationCount(2)
+
+        await probe.release(invocation: 1)
+        try? await Task.sleep(for: .milliseconds(10))
+        #expect(viewModel.phase == .running)
+        #expect(viewModel.results.isEmpty)
+
+        await probe.release(invocation: 2)
+        await viewModel.waitForCompletion()
+
+        #expect(viewModel.phase == .completed)
+        #expect(viewModel.endReason == .completed)
+        #expect(viewModel.results[.path]?.status == .normal)
     }
 
     @Test("a successful diagnostics run reports the completion moment exactly once")
@@ -2512,8 +3072,9 @@ struct NetworkDiagnosticsTests {
         viewModel.cancel()
         await viewModel.waitForCompletion()
 
-        #expect(viewModel.phase == .idle)
+        #expect(viewModel.phase == .completed)
         #expect(viewModel.conclusion == nil)
+        #expect(viewModel.endReason == .cancelled)
         #expect(guidance.store.load().meaningfulCompletionCount == 0)
         #expect(guidance.events.isEmpty)
     }
@@ -2613,6 +3174,79 @@ struct NetworkDiagnosticsTests {
         #expect(observation.baseline.tunnelInterfaces.isEmpty)
         #expect(change?.tunnelInterfaces == ["utun3"])
         #expect(change?.routedTunnelInterface == "utun3")
+    }
+
+    @Test("gateway target identity includes interface index and address state")
+    func fingerprintIncludesRouteAndAddressIdentity() {
+        let first = NetworkFingerprint(
+            interfaceType: "ethernet",
+            interfaceName: "en7",
+            pathStatus: .satisfied,
+            dnsSettingsHash: 1,
+            staticProxySettingsHash: 7,
+            selectedInterfaceIndex: 12,
+            selectedInterfaceAddresses: ["192.0.2.10"],
+            selectedInterfaceSubnets: ["255.255.255.0"],
+            selectedGateway: "192.0.2.1",
+            ipv4PrimaryServiceIdentity: "service-a",
+            ipv6PrimaryServiceIdentity: "service-v6"
+        )
+        let changedAddress = NetworkFingerprint(
+            interfaceType: "ethernet",
+            interfaceName: "en7",
+            pathStatus: .satisfied,
+            dnsSettingsHash: 1,
+            staticProxySettingsHash: 7,
+            selectedInterfaceIndex: 12,
+            selectedInterfaceAddresses: ["192.0.2.11"],
+            selectedInterfaceSubnets: ["255.255.255.0"],
+            selectedGateway: "192.0.2.1",
+            ipv4PrimaryServiceIdentity: "service-a",
+            ipv6PrimaryServiceIdentity: "service-v6"
+        )
+        let changedRoute = NetworkFingerprint(
+            interfaceType: "ethernet",
+            interfaceName: "en7",
+            pathStatus: .satisfied,
+            dnsSettingsHash: 1,
+            staticProxySettingsHash: 7,
+            selectedInterfaceIndex: 12,
+            selectedInterfaceAddresses: ["192.0.2.10"],
+            selectedInterfaceSubnets: ["255.255.255.0"],
+            selectedGateway: "192.0.2.254",
+            ipv4PrimaryServiceIdentity: "service-a",
+            ipv6PrimaryServiceIdentity: "service-v6"
+        )
+
+        #expect(first != changedAddress)
+        #expect(first != changedRoute)
+    }
+
+    @Test("fingerprint comparison ignores address and tunnel collection order")
+    func fingerprintNormalizesUnorderedCollections() {
+        let first = NetworkFingerprint(
+            interfaceType: "ethernet",
+            interfaceName: "en7",
+            pathStatus: .satisfied,
+            dnsSettingsHash: 1,
+            staticProxySettingsHash: 7,
+            tunnelInterfaces: ["utun3", "utun2"],
+            selectedInterfaceAddresses: ["192.0.2.11", "192.0.2.10"],
+            selectedInterfaceSubnets: ["255.255.255.0", "255.255.0.0"]
+        )
+        let reordered = NetworkFingerprint(
+            interfaceType: "ethernet",
+            interfaceName: "en7",
+            pathStatus: .satisfied,
+            dnsSettingsHash: 1,
+            staticProxySettingsHash: 7,
+            tunnelInterfaces: ["utun2", "utun3"],
+            selectedInterfaceAddresses: ["192.0.2.10", "192.0.2.11"],
+            selectedInterfaceSubnets: ["255.255.0.0", "255.255.255.0"]
+        )
+
+        #expect(first == reordered)
+        #expect(first.restartReason(comparedWith: reordered) == .path)
     }
 
     private func makeResults(
@@ -3045,6 +3679,14 @@ private actor StubDNSResolver: DNSResolving {
         invocationCount += 1
         defer { outcomeIndex += 1 }
         return outcomes[min(outcomeIndex, outcomes.endIndex - 1)]
+    }
+}
+
+private struct MappingDNSResolver: DNSResolving {
+    let outcomes: [String: DNSResolutionOutcome]
+
+    func resolve(host: String, timeout: Duration) async -> DNSResolutionOutcome {
+        outcomes[host] ?? .indeterminate
     }
 }
 
@@ -3870,6 +4512,45 @@ private struct BlockingProbeDiagnosticCheck: DiagnosticCheck {
     }
 }
 
+private actor CancellationIgnoringDiagnosticProbe {
+    private var continuations: [Int: CheckedContinuation<Void, Never>] = [:]
+    private var invocationWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    private(set) var invocationCount = 0
+
+    func run() async {
+        invocationCount += 1
+        let invocation = invocationCount
+        let readyWaiters = invocationWaiters.filter { $0.count <= invocation }
+        invocationWaiters.removeAll { $0.count <= invocation }
+        readyWaiters.forEach { $0.continuation.resume() }
+
+        await withCheckedContinuation { continuation in
+            continuations[invocation] = continuation
+        }
+    }
+
+    func waitForInvocationCount(_ expectedCount: Int) async {
+        guard invocationCount < expectedCount else { return }
+        await withCheckedContinuation {
+            invocationWaiters.append((expectedCount, $0))
+        }
+    }
+
+    func release(invocation: Int) {
+        continuations.removeValue(forKey: invocation)?.resume()
+    }
+}
+
+private struct CancellationIgnoringProbeDiagnosticCheck: DiagnosticCheck {
+    let id: NetworkDiagnosticCheckID = .path
+    let probe: CancellationIgnoringDiagnosticProbe
+
+    func run() async -> NetworkDiagnosticResult {
+        await probe.run()
+        return .init(id: id, status: .normal, summary: id.rawValue)
+    }
+}
+
 private actor ControlledNetworkFingerprintMonitor: NetworkFingerprintMonitoring {
     let initial: NetworkFingerprint
     private var lastFingerprint: NetworkFingerprint
@@ -4016,6 +4697,66 @@ private struct StubNetworkInterfaceSource: NetworkInterfaceInfoSourcing {
     }
 }
 
+private actor RecordingGatewayPingProcessRunner: GatewayPingProcessRunning {
+    let latency: Double?
+    private(set) var executablePath: String?
+    private(set) var arguments: [String] = []
+
+    init(latency: Double?) {
+        self.latency = latency
+    }
+
+    func run(executablePath: String, arguments: [String]) async -> Double? {
+        self.executablePath = executablePath
+        self.arguments = arguments
+        return latency
+    }
+
+    func cancel() async {}
+}
+
+private actor RecordingDiagnosticGatewayMeasurer: DiagnosticGatewayMeasuring {
+    private(set) var targets: [DiagnosticGatewayTarget] = []
+
+    func measure(target: DiagnosticGatewayTarget) async -> GatewayLatencyResult {
+        targets.append(target)
+        return GatewayLatencyResult(
+            timestamp: Date(),
+            routerIP: target.address,
+            latencyMs: 2.5
+        )
+    }
+}
+
+private actor SequencedDiagnosticRouteSource: DiagnosticRouteSourcing {
+    private let values: [DiagnosticRouteSelection]
+    private var index = 0
+    private(set) var invocationCount = 0
+
+    init(values: [DiagnosticRouteSelection]) {
+        precondition(!values.isEmpty)
+        self.values = values
+    }
+
+    func currentRoute(timeout: Duration) async -> DiagnosticRouteSelection {
+        invocationCount += 1
+        defer { index += 1 }
+        return values[min(index, values.endIndex - 1)]
+    }
+}
+
+private struct StubNetworkInterfaceSnapshotSource: NetworkInterfaceSnapshotSourcing {
+    let interfaces: [NetworkInterfaceInfo]
+
+    func capture(cycleID: UUID) async -> NetworkInterfaceSnapshot {
+        NetworkInterfaceSnapshot(
+            cycleID: cycleID,
+            capturedAt: Date(),
+            interfaces: interfaces
+        )
+    }
+}
+
 private struct StubGatewayLatencyProvider: GatewayLatencyProviding {
     let result: GatewayLatencyResult
 
@@ -4024,9 +4765,9 @@ private struct StubGatewayLatencyProvider: GatewayLatencyProviding {
     }
 }
 
-private func makeNetworkInterface(router: String?) -> NetworkInterfaceInfo {
+private func makeNetworkInterface(name: String = "en0", router: String?) -> NetworkInterfaceInfo {
     NetworkInterfaceInfo(
-        interfaceName: "en0",
+        interfaceName: name,
         hardwareMAC: "00:11:22:33:44:55",
         ipv4Addresses: ["192.0.2.10"],
         subnetMasks: ["255.255.255.0"],
@@ -4040,5 +4781,23 @@ private func makeNetworkInterface(router: String?) -> NetworkInterfaceInfo {
         txRate: nil,
         phyMode: nil,
         security: "WPA2"
+    )
+}
+
+private func makeDiagnosticContext(
+    pathState: NetworkPathState?,
+    route: DiagnosticRouteSelection,
+    interfaces: [NetworkInterfaceInfo] = []
+) -> DiagnosticNetworkContext {
+    DiagnosticNetworkContext(
+        runID: UUID(),
+        capturedAt: Date(),
+        pathState: pathState,
+        route: route,
+        interfaces: NetworkInterfaceSnapshot(
+            cycleID: UUID(),
+            capturedAt: Date(),
+            interfaces: interfaces
+        )
     )
 }

@@ -50,10 +50,15 @@ struct SystemDNSResolver: DNSResolving {
                 )
                 context.install(serviceRef: serviceRef)
 
-                Task {
-                    try? await Task.sleep(for: timeout)
-                    context.finish(.indeterminate)
+                let timeoutTask = Task { [context] in
+                    do {
+                        try await Task.sleep(for: timeout)
+                        context.finish(.indeterminate)
+                    } catch {
+                        // The DNS callback completed or the caller cancelled.
+                    }
                 }
+                context.install(timeoutTask: timeoutTask)
             }
         } onCancel: {
             context.cancel()
@@ -66,10 +71,12 @@ private final class DNSResolutionContext: @unchecked Sendable {
     private var continuation: CheckedContinuation<DNSResolutionOutcome, Never>?
     private var serviceRef: DNSServiceRef?
     private var cancellationRequested = false
+    private var didFinish = false
+    private var timeoutTask: Task<Void, Never>?
 
     func install(continuation: CheckedContinuation<DNSResolutionOutcome, Never>) -> Bool {
         lock.lock()
-        guard !cancellationRequested else {
+        guard !cancellationRequested, !didFinish else {
             lock.unlock()
             continuation.resume(returning: .indeterminate)
             return false
@@ -81,7 +88,7 @@ private final class DNSResolutionContext: @unchecked Sendable {
 
     func install(serviceRef: DNSServiceRef) {
         lock.lock()
-        if continuation == nil {
+        if didFinish || continuation == nil {
             lock.unlock()
             DNSServiceRefDeallocate(serviceRef)
             return
@@ -90,21 +97,37 @@ private final class DNSResolutionContext: @unchecked Sendable {
         lock.unlock()
     }
 
+    func install(timeoutTask: Task<Void, Never>) {
+        lock.lock()
+        if didFinish {
+            lock.unlock()
+            timeoutTask.cancel()
+            return
+        }
+        self.timeoutTask = timeoutTask
+        lock.unlock()
+    }
+
     func finish(_ outcome: DNSResolutionOutcome) {
         lock.lock()
-        guard let continuation else {
+        guard !didFinish else {
             lock.unlock()
             return
         }
+        didFinish = true
+        let continuation = self.continuation
         self.continuation = nil
         let serviceRef = self.serviceRef
         self.serviceRef = nil
+        let timeoutTask = self.timeoutTask
+        self.timeoutTask = nil
         lock.unlock()
 
         if let serviceRef {
             DNSServiceRefDeallocate(serviceRef)
         }
-        continuation.resume(returning: outcome)
+        timeoutTask?.cancel()
+        continuation?.resume(returning: outcome)
     }
 
     func cancel() {
@@ -140,26 +163,38 @@ struct DNSResolutionCheck: DiagnosticCheck {
     }
 
     func run() async -> NetworkDiagnosticResult {
-        let outcomes = await withTaskGroup(of: DNSResolutionOutcome.self, returning: [DNSResolutionOutcome].self) { group in
-            for host in probeTargets {
+        let outcomes = await withTaskGroup(of: (index: Int, outcome: DNSResolutionOutcome).self, returning: [DNSResolutionOutcome].self) { group in
+            for (index, host) in probeTargets.enumerated() {
                 group.addTask {
                     let firstOutcome = await resolver.resolve(host: host, timeout: timeout)
+                    let outcome: DNSResolutionOutcome
                     if firstOutcome == .indeterminate, !Task.isCancelled {
-                        return await resolver.resolve(host: host, timeout: timeout)
+                        outcome = await resolver.resolve(host: host, timeout: timeout)
+                    } else {
+                        outcome = firstOutcome
                     }
-                    return firstOutcome
+                    return (index, outcome)
                 }
             }
-            var outcomes: [DNSResolutionOutcome] = []
-            for await outcome in group {
-                outcomes.append(outcome)
+            var outcomes = Array(
+                repeating: DNSResolutionOutcome.indeterminate,
+                count: probeTargets.count
+            )
+            for await sample in group {
+                outcomes[sample.index] = sample.outcome
             }
             return outcomes
         }
         let successCount = outcomes.count { $0 == .resolved }
         let failureCount = outcomes.count { $0 == .failed }
         let indeterminateCount = outcomes.count { $0 == .indeterminate }
-        let evidence = [
+        let sampleEvidence = probeTargets.enumerated().map { index, host in
+            NetworkDiagnosticEvidence(
+                code: "dns.sample.\(Self.sampleID(for: host, index: index))",
+                value: Self.evidenceValue(for: outcomes[index])
+            )
+        }
+        let evidence = sampleEvidence + [
             NetworkDiagnosticEvidence(code: "dns.success-count", value: "\(successCount)/\(probeTargets.count)"),
             NetworkDiagnosticEvidence(code: "dns.failure-count", value: "\(failureCount)/\(probeTargets.count)"),
             NetworkDiagnosticEvidence(code: "dns.indeterminate-count", value: "\(indeterminateCount)/\(probeTargets.count)"),
@@ -195,5 +230,22 @@ struct DNSResolutionCheck: DiagnosticCheck {
             summary: String(localized: "network_diagnostics.dns.inconsistent.summary", comment: "Network self-check DNS test names had mixed outcomes"),
             evidence: evidence
         )
+    }
+
+    private static func sampleID(for host: String, index: Int) -> String {
+        switch host.lowercased() {
+        case "www.apple.com": "apple"
+        case "www.microsoft.com": "microsoft"
+        case "www.msftconnecttest.com": "msft-connect-test"
+        default: "sample-\(index + 1)"
+        }
+    }
+
+    private static func evidenceValue(for outcome: DNSResolutionOutcome) -> String {
+        switch outcome {
+        case .resolved: "resolved"
+        case .failed: "failed"
+        case .indeterminate: "indeterminate"
+        }
     }
 }

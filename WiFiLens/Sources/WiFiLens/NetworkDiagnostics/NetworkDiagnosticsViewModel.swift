@@ -36,6 +36,19 @@ struct NetworkDiagnosticsWorkbenchRow: Equatable, Identifiable, Sendable {
     let id: NetworkDiagnosticCheckID
     let executionPhase: NetworkDiagnosticExecutionPhase
     let result: NetworkDiagnosticResult?
+    let pendingReason: DiagnosticRunEndReason?
+
+    init(
+        id: NetworkDiagnosticCheckID,
+        executionPhase: NetworkDiagnosticExecutionPhase,
+        result: NetworkDiagnosticResult?,
+        pendingReason: DiagnosticRunEndReason? = nil
+    ) {
+        self.id = id
+        self.executionPhase = executionPhase
+        self.result = result
+        self.pendingReason = pendingReason
+    }
 }
 
 enum NetworkDiagnosticsWorkbenchItem: Equatable, Identifiable {
@@ -57,7 +70,8 @@ enum NetworkDiagnosticsPresentation {
         pagePhase: NetworkDiagnosticsPagePhase,
         executionPhases: [NetworkDiagnosticCheckID: NetworkDiagnosticExecutionPhase],
         results: [NetworkDiagnosticCheckID: NetworkDiagnosticResult],
-        checkIDs: [NetworkDiagnosticCheckID] = NetworkDiagnosticCheckID.allCases
+        checkIDs: [NetworkDiagnosticCheckID] = NetworkDiagnosticCheckID.allCases,
+        endReason: DiagnosticRunEndReason? = nil
     ) -> [NetworkDiagnosticsWorkbenchRow] {
         guard pagePhase != .idle else { return [] }
 
@@ -66,13 +80,11 @@ enum NetworkDiagnosticsPresentation {
             if pagePhase == .running, executionPhase == .waiting {
                 return nil
             }
-            guard pagePhase != .completed || results[id] != nil else {
-                return nil
-            }
             return NetworkDiagnosticsWorkbenchRow(
                 id: id,
                 executionPhase: executionPhase,
-                result: results[id]
+                result: results[id],
+                pendingReason: pagePhase == .completed && results[id] == nil ? endReason : nil
             )
         }
     }
@@ -90,13 +102,15 @@ enum NetworkDiagnosticsPresentation {
         pagePhase: NetworkDiagnosticsPagePhase,
         executionPhases: [NetworkDiagnosticCheckID: NetworkDiagnosticExecutionPhase],
         results: [NetworkDiagnosticCheckID: NetworkDiagnosticResult],
-        checkIDs: [NetworkDiagnosticCheckID] = NetworkDiagnosticCheckID.allCases
+        checkIDs: [NetworkDiagnosticCheckID] = NetworkDiagnosticCheckID.allCases,
+        endReason: DiagnosticRunEndReason? = nil
     ) -> [NetworkDiagnosticsWorkbenchItem] {
         let rows = workbenchRows(
             pagePhase: pagePhase,
             executionPhases: executionPhases,
             results: results,
-            checkIDs: checkIDs
+            checkIDs: checkIDs,
+            endReason: endReason
         )
         guard !rows.isEmpty else { return [] }
 
@@ -128,7 +142,12 @@ final class NetworkDiagnosticsViewModel {
     private(set) var results: [NetworkDiagnosticCheckID: NetworkDiagnosticResult] = [:]
     private(set) var logStore = NetworkDiagnosticsLogStore()
     private(set) var conclusion: NetworkDiagnosticConclusion?
+    private(set) var assessment: NetworkDiagnosticAssessment?
+    private(set) var endReason: DiagnosticRunEndReason?
+    private(set) var pendingCheckIDs: [NetworkDiagnosticCheckID] = []
     private(set) var automaticRestartCount = 0
+    private(set) var currentRunID: UUID?
+    private(set) var fingerprintMonitoringAvailable = true
     let checkIDs: [NetworkDiagnosticCheckID]
 
     var logText: String { logStore.text }
@@ -136,29 +155,52 @@ final class NetworkDiagnosticsViewModel {
     @ObservationIgnored private let checks: [any DiagnosticCheck]
     @ObservationIgnored private let minimumStepDuration: Duration
     @ObservationIgnored private let fingerprintMonitor: any NetworkFingerprintMonitoring
+    @ObservationIgnored private let contextSource: any DiagnosticNetworkContextSourcing
+    @ObservationIgnored private let diagnosticGatewayMeasuring: any DiagnosticGatewayMeasuring
+    @ObservationIgnored private let clock: any DiagnosticClock
+    @ObservationIgnored private let usesProductionChecks: Bool
     @ObservationIgnored private let guidance: GuidanceCoordinator
     @ObservationIgnored private var activeTask: Task<Void, Never>?
+    @ObservationIgnored private var runGeneration: UInt64 = 0
+    @ObservationIgnored private var logSessionID: UUID?
+    @ObservationIgnored private var logSessionStartedAt: ContinuousClock.Instant?
 
-    init(checks: [any DiagnosticCheck] = [
-        NetworkConnectivityCheck(),
-        GatewayReachabilityCheck(),
-        DNSResolutionCheck(),
-        HTTPSControlEndpointCheck(),
-        IPv6ControlEndpointCheck(),
-        SystemProxyCheck(),
-    ],
+    init(
+    checks: [any DiagnosticCheck]? = nil,
     minimumStepDuration: Duration = NetworkDiagnosticsViewModel.defaultMinimumStepDuration,
-    fingerprintMonitor: any NetworkFingerprintMonitoring = SystemNetworkFingerprintMonitor(),
+    fingerprintMonitor: any NetworkFingerprintMonitoring = SystemNetworkFingerprintMonitor(
+        routeStateSource: SystemNetworkFingerprintRouteStateSource()
+    ),
+    contextSource: any DiagnosticNetworkContextSourcing = SystemDiagnosticNetworkContextSource(),
+    diagnosticGatewayMeasuring: any DiagnosticGatewayMeasuring = GatewayLatencyProvider(),
+    clock: any DiagnosticClock = ContinuousDiagnosticClock(),
     guidance: GuidanceCoordinator = .shared
     ) {
-        self.checks = checks
+        let productionChecks = checks == nil
+        let configuredChecks = checks ?? Self.defaultChecks()
+        self.checks = configuredChecks
         self.minimumStepDuration = minimumStepDuration
         self.fingerprintMonitor = fingerprintMonitor
+        self.contextSource = contextSource
+        self.diagnosticGatewayMeasuring = diagnosticGatewayMeasuring
+        self.clock = clock
+        self.usesProductionChecks = productionChecks
         self.guidance = guidance
-        self.checkIDs = checks.map(\.id)
+        self.checkIDs = configuredChecks.map(\.id)
         self.executionPhases = Dictionary(
-            uniqueKeysWithValues: checks.map { ($0.id, .waiting) }
+            uniqueKeysWithValues: configuredChecks.map { ($0.id, .waiting) }
         )
+    }
+
+    private static func defaultChecks() -> [any DiagnosticCheck] {
+        [
+            NetworkConnectivityCheck(),
+            GatewayReachabilityCheck(),
+            DNSResolutionCheck(),
+            HTTPSControlEndpointCheck(),
+            SystemProxyCheck(),
+            IPv6ControlEndpointCheck(),
+        ]
     }
 
     deinit {
@@ -171,14 +213,23 @@ final class NetworkDiagnosticsViewModel {
 
         results = [:]
         logStore.reset()
-        logStore.append("Checking…")
+        logSessionID = UUID()
+        logSessionStartedAt = ContinuousClock().now
+        appendEvent(.sessionStarted)
         conclusion = nil
+        assessment = nil
+        endReason = nil
+        pendingCheckIDs = checkIDs
+        currentRunID = nil
+        fingerprintMonitoringAvailable = true
         automaticRestartCount = 0
         phase = .running
         prepareExecutionPhases(retaining: [])
+        runGeneration &+= 1
+        let generation = runGeneration
 
         activeTask = Task { [weak self] in
-            await self?.runSession()
+            await self?.runSession(generation: generation)
         }
         return true
     }
@@ -189,53 +240,110 @@ final class NetworkDiagnosticsViewModel {
     }
 
     func cancel() {
+        guard phase == .running else {
+            activeTask?.cancel()
+            activeTask = nil
+            return
+        }
+        runGeneration &+= 1
+        currentRunID = nil
         activeTask?.cancel()
+        activeTask = nil
+        endReason = .cancelled
+        pendingCheckIDs = checkIDs.filter { results[$0] == nil }
+        assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: results,
+            complete: false,
+            requiredIDs: Set(checkIDs)
+        )
+        conclusion = nil
+        phase = .completed
     }
 
     func clearLogs() {
         logStore.reset()
     }
 
-    private func accept(_ result: NetworkDiagnosticResult) {
+    private func accept(_ result: NetworkDiagnosticResult, runID: UUID) {
+        guard DiagnosticPublicationGate(activeRunID: currentRunID).accepts(runID) else { return }
         results[result.id] = result
         executionPhases[result.id] = .completed
-        logStore.append("\(result.id.logTitle): \(result.status.logTitle)")
-
-        guard let index = checkIDs.firstIndex(of: result.id) else { return }
-        let nextIndex = checkIDs.index(after: index)
-        if nextIndex < checkIDs.endIndex {
-            executionPhases[checkIDs[nextIndex]] = .checking
-        }
+        assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: results,
+            complete: false,
+            requiredIDs: Set(checkIDs)
+        )
+        appendEvent(.checkFinished, runID: runID, checkID: result.id)
     }
 
-    private func runSession() async {
+    private func runSession(generation: UInt64) async {
+        guard isCurrentGeneration(generation) else { return }
         let restartController = NetworkDiagnosticRestartController()
+        let sessionDeadline = (await clock.now()).advanced(by: Self.defaultSessionBudget)
 
         await withTaskCancellationHandler {
-            let fingerprintObservation = await fingerprintMonitor.observation()
+            let fingerprintObservation = await boundedFingerprintObservation(
+                until: min(
+                    sessionDeadline,
+                    (await clock.now()).advanced(by: .seconds(1))
+                )
+            )
+            if fingerprintObservation == nil {
+                fingerprintMonitoringAvailable = false
+            }
             guard !Task.isCancelled else {
-                phase = .idle
+                finish(
+                    DiagnosticRunOutcome(
+                        runID: UUID(),
+                        results: [],
+                        pendingIDs: checkIDs,
+                        endReason: .cancelled
+                    ),
+                    generation: generation
+                )
                 return
             }
             await executeSession(
                 fingerprintObservation: fingerprintObservation,
-                restartController: restartController
+                restartController: restartController,
+                sessionDeadline: sessionDeadline,
+                generation: generation
             )
         } onCancel: {
             Task { await restartController.cancelCurrentRun() }
         }
-        activeTask = nil
+        if generation == runGeneration {
+            activeTask = nil
+        }
     }
 
     private func executeSession(
         fingerprintObservation: NetworkFingerprintObservation?,
-        restartController: NetworkDiagnosticRestartController
+        restartController: NetworkDiagnosticRestartController,
+        sessionDeadline: ContinuousClock.Instant,
+        generation: UInt64
     ) async {
+        let fingerprintState: NetworkDiagnosticsFingerprintStreamState? = fingerprintObservation.map {
+            NetworkDiagnosticsFingerprintStreamState(baseline: $0.baseline)
+        }
         let monitorTask: Task<Void, Never>? = fingerprintObservation.map { observation in
             return Task {
                 for await fingerprint in observation.changes {
                     guard !Task.isCancelled else { break }
-                    await restartController.observe(fingerprint)
+                    guard let previous = await fingerprintState?.accept(fingerprint) else { continue }
+                    let runID = currentRunID ?? logSessionID
+                    currentRunID = nil
+                    if await restartController.observe(
+                        fingerprint,
+                        at: await clock.now()
+                    ) {
+                        invalidateNetworkResultsForChange()
+                        appendEvent(
+                            .restarted,
+                            runID: runID,
+                            reasonCode: fingerprint.restartReason(comparedWith: previous).rawValue
+                        )
+                    }
                 }
             }
         }
@@ -243,33 +351,160 @@ final class NetworkDiagnosticsViewModel {
 
         var retainedResults: [NetworkDiagnosticResult] = []
         while !Task.isCancelled {
+            guard isCurrentGeneration(generation), await clock.now() < sessionDeadline else {
+                finish(
+                    DiagnosticRunOutcome(
+                        runID: UUID(),
+                        results: retainedResults,
+                        pendingIDs: checkIDs.filter { id in
+                            !retainedResults.contains { $0.id == id }
+                        },
+                        endReason: .timedOut
+                    ),
+                    generation: generation
+                )
+                return
+            }
+            let runID = UUID()
+            currentRunID = runID
+            appendEvent(.runStarted, runID: runID)
+            let context: DiagnosticNetworkContext?
+            if usesProductionChecks {
+                let remaining = await clock.now().duration(to: sessionDeadline)
+                if remaining > .zero {
+                    context = await contextSource.capture(
+                        runID: runID,
+                        timeout: min(remaining, .seconds(1))
+                    )
+                } else {
+                    context = nil
+                }
+            } else {
+                context = nil
+            }
+            guard isCurrentGeneration(generation) else {
+                finish(
+                    DiagnosticRunOutcome(
+                        runID: runID,
+                        results: retainedResults,
+                        pendingIDs: checkIDs.filter { id in
+                            !retainedResults.contains { $0.id == id }
+                        },
+                        endReason: .cancelled
+                    ),
+                    generation: generation
+                )
+                return
+            }
+            let checks = checksForRun(context: context)
             let runner = DiagnosticRunner(
                 checks: checks,
                 minimumStepDuration: minimumStepDuration,
-                sessionBudget: Self.defaultSessionBudget
+                sessionBudget: Self.defaultSessionBudget,
+                clock: clock
             )
             let retainedSnapshot = retainedResults
             let runTask = Task { [weak self] in
-                await runner.run(retaining: retainedSnapshot) { [weak self] result in
-                    await self?.accept(result)
-                }
+                await runner.run(
+                    runID: runID,
+                    retaining: retainedSnapshot,
+                    deadline: sessionDeadline,
+                    onCheckStarted: { [weak self] id in
+                        await self?.beginCheck(id, runID: runID)
+                    },
+                    onResult: { [weak self] result in
+                        await self?.accept(result, runID: runID)
+                    }
+                )
             }
             await restartController.install(runTask)
-            let orderedResults = await runTask.value
+            let outcome = await runTask.value
 
             if await restartController.completeRun() {
+                guard await restartController.waitForStability(
+                    using: clock,
+                    until: sessionDeadline
+                ) else {
+                    finish(
+                        DiagnosticRunOutcome(
+                            runID: outcome.runID,
+                            results: outcome.results,
+                            pendingIDs: outcome.pendingIDs,
+                            endReason: .superseded
+                        ),
+                        generation: generation
+                    )
+                    return
+                }
                 automaticRestartCount += 1
-                retainedResults = configurationOnlyResults(from: orderedResults)
+                retainedResults = configurationOnlyResults(from: outcome.results)
+                currentRunID = nil
                 results = Dictionary(uniqueKeysWithValues: retainedResults.map { ($0.id, $0) })
                 conclusion = nil
+                assessment = NetworkDiagnosticAssessmentResolver().resolve(
+                    results: results,
+                    complete: false,
+                    requiredIDs: Set(checkIDs)
+                )
                 prepareExecutionPhases(retaining: retainedResults)
                 continue
             }
 
-            finish(orderedResults)
+            finish(outcome, generation: generation)
             return
         }
-        phase = .idle
+        guard generation == runGeneration else { return }
+        finish(
+            DiagnosticRunOutcome(
+                runID: UUID(),
+                results: retainedResults,
+                pendingIDs: checkIDs.filter { id in
+                    !retainedResults.contains { $0.id == id }
+                },
+                endReason: .cancelled
+            ),
+            generation: generation
+        )
+    }
+
+    private func boundedFingerprintObservation(
+        until deadline: ContinuousClock.Instant
+    ) async -> NetworkFingerprintObservation? {
+        let observationTask = Task {
+            await fingerprintMonitor.observation()
+        }
+        return await withTaskGroup(of: NetworkFingerprintObservation?.self) { group in
+            group.addTask { await observationTask.value }
+            group.addTask {
+                try? await self.clock.sleep(until: deadline)
+                observationTask.cancel()
+                return nil
+            }
+            let observation = await group.next() ?? nil
+            group.cancelAll()
+            return observation
+        }
+    }
+
+    private func beginCheck(_ id: NetworkDiagnosticCheckID, runID: UUID) {
+        guard DiagnosticPublicationGate(activeRunID: currentRunID).accepts(runID) else { return }
+        executionPhases[id] = .checking
+        appendEvent(.checkStarted, runID: runID, checkID: id)
+    }
+
+    private func checksForRun(context: DiagnosticNetworkContext?) -> [any DiagnosticCheck] {
+        guard usesProductionChecks, let context else { return checks }
+        return [
+            NetworkConnectivityCheck(context: context),
+            GatewayReachabilityCheck(
+                context: context,
+                gatewayMeasuring: diagnosticGatewayMeasuring
+            ),
+            DNSResolutionCheck(),
+            HTTPSControlEndpointCheck(),
+            SystemProxyCheck(),
+            IPv6ControlEndpointCheck(),
+        ]
     }
 
     private func configurationOnlyResults(
@@ -286,34 +521,106 @@ final class NetworkDiagnosticsViewModel {
         executionPhases = Dictionary(uniqueKeysWithValues: checkIDs.map { id in
             (id, retainedIDs.contains(id) ? .completed : .waiting)
         })
-        if let firstPendingID = checkIDs.first(where: { !retainedIDs.contains($0) }) {
-            executionPhases[firstPendingID] = .checking
-        }
     }
 
-    private func finish(_ orderedResults: [NetworkDiagnosticResult]) {
-        guard !Task.isCancelled, let conclusion = NetworkDiagnosticConclusion.evaluate(
-            orderedResults,
+    private func invalidateNetworkResultsForChange() {
+        let retainedResults = configurationOnlyResults(from: Array(results.values))
+        results = Dictionary(uniqueKeysWithValues: retainedResults.map { ($0.id, $0) })
+        conclusion = nil
+        assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: results,
+            complete: false,
             requiredIDs: Set(checkIDs)
-        ) else {
-            phase = .idle
-            return
+        )
+        pendingCheckIDs = checkIDs.filter { results[$0] == nil }
+        prepareExecutionPhases(retaining: retainedResults)
+    }
+
+    private func isCurrentGeneration(_ generation: UInt64) -> Bool {
+        generation == runGeneration && !Task.isCancelled
+    }
+
+    private func appendEvent(
+        _ kind: DiagnosticEventKind,
+        runID: UUID? = nil,
+        checkID: NetworkDiagnosticCheckID? = nil,
+        reasonCode: String? = nil
+    ) {
+        let eventRunID = runID ?? currentRunID ?? logSessionID ?? UUID()
+        let elapsedMilliseconds: Int64
+        if let startedAt = logSessionStartedAt {
+            let duration = startedAt.duration(to: ContinuousClock().now)
+            let components = duration.components
+            let milliseconds = Double(components.seconds) * 1_000
+                + Double(components.attoseconds) / 1_000_000_000_000_000
+            elapsedMilliseconds = Int64(max(0, milliseconds.rounded()))
+        } else {
+            elapsedMilliseconds = 0
         }
-        self.conclusion = conclusion
+        logStore.append(NetworkDiagnosticEvent(
+            runID: eventRunID,
+            elapsedMilliseconds: elapsedMilliseconds,
+            kind: kind,
+            checkID: checkID,
+            reasonCode: reasonCode
+        ))
+    }
+
+    private func finish(_ outcome: DiagnosticRunOutcome, generation: UInt64) {
+        guard generation == runGeneration else { return }
+        currentRunID = nil
+        endReason = outcome.endReason
+        pendingCheckIDs = outcome.pendingIDs
+        results = Dictionary(uniqueKeysWithValues: outcome.results.map { ($0.id, $0) })
+        assessment = NetworkDiagnosticAssessmentResolver().resolve(
+            results: results,
+            complete: outcome.endReason == .completed,
+            requiredIDs: Set(checkIDs)
+        )
+        conclusion = assessment?.conclusion
         phase = .completed
-        guidance.record(.diagnosticsCompleted)
+        let endEvent: DiagnosticEventKind = switch outcome.endReason {
+        case .completed: .completed
+        case .timedOut, .superseded: .timedOut
+        case .cancelled: .cancelled
+        }
+        appendEvent(
+            endEvent,
+            runID: outcome.runID,
+            reasonCode: outcome.endReason == .superseded ? "network-change" : nil
+        )
+        if outcome.endReason == .completed, conclusion != nil {
+            guidance.record(.diagnosticsCompleted)
+        }
+    }
+}
+
+private actor NetworkDiagnosticsFingerprintStreamState {
+    private var latest: NetworkFingerprint
+
+    init(baseline: NetworkFingerprint) {
+        latest = baseline
+    }
+
+    func accept(_ fingerprint: NetworkFingerprint) -> NetworkFingerprint? {
+        guard fingerprint != latest else { return nil }
+        let previous = latest
+        latest = fingerprint
+        return previous
     }
 }
 
 actor NetworkDiagnosticRestartController {
-    private var currentRun: Task<[NetworkDiagnosticResult], Never>?
+    private var currentRunCancellation: (@Sendable () -> Void)?
     private var restartRequested = false
     private var restartInstallPending = false
     private var cancellationRequested = false
     private var finalized = false
+    private var lastFingerprint: NetworkFingerprint?
+    private var lastChangeAt: ContinuousClock.Instant?
 
-    func install(_ task: Task<[NetworkDiagnosticResult], Never>) {
-        currentRun = task
+    func install<Success: Sendable>(_ task: Task<Success, Never>) {
+        currentRunCancellation = { task.cancel() }
         restartInstallPending = false
         if restartRequested || cancellationRequested {
             task.cancel()
@@ -321,16 +628,42 @@ actor NetworkDiagnosticRestartController {
     }
 
     @discardableResult
-    func observe(_: NetworkFingerprint) -> Bool {
+    func observe(
+        _ fingerprint: NetworkFingerprint,
+        at now: ContinuousClock.Instant = ContinuousClock().now
+    ) -> Bool {
         guard !finalized, !cancellationRequested else { return false }
-        guard !restartInstallPending else { return true }
+        guard fingerprint != lastFingerprint else { return true }
+        lastFingerprint = fingerprint
+        lastChangeAt = now
+        if restartInstallPending { return true }
         restartRequested = true
-        currentRun?.cancel()
+        currentRunCancellation?()
         return true
     }
 
+    func waitForStability(
+        using clock: any DiagnosticClock,
+        until deadline: ContinuousClock.Instant
+    ) async -> Bool {
+        while !cancellationRequested, !finalized {
+            guard let lastChangeAt else { return false }
+            let stableAt = lastChangeAt.advanced(by: .milliseconds(500))
+            let waitUntil = min(stableAt, deadline)
+            try? await clock.sleep(until: waitUntil)
+            if cancellationRequested || finalized { return false }
+            let now = await clock.now()
+            if now >= stableAt {
+                restartInstallPending = false
+                return true
+            }
+            if now >= deadline { return false }
+        }
+        return false
+    }
+
     func completeRun() -> Bool {
-        currentRun = nil
+        currentRunCancellation = nil
         if cancellationRequested {
             finalized = true
             return false
@@ -348,8 +681,8 @@ actor NetworkDiagnosticRestartController {
         cancellationRequested = true
         restartRequested = false
         restartInstallPending = false
-        currentRun?.cancel()
-        currentRun = nil
+        currentRunCancellation?()
+        currentRunCancellation = nil
     }
 }
 
