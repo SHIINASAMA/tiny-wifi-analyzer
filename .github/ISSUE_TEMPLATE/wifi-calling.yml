@@ -1,0 +1,93 @@
+name: Wi-Fi Calling
+description: Report a Wi-Fi Calling Preview result, carrier catalog issue, DNS/IKE observation, or UI problem.
+title: "[Wi-Fi Calling] "
+labels:
+  - wifi-calling
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Wi-Fi Calling checks are experimental Preview diagnostics. A successful DNS or IKE observation does not prove that the carrier supports Wi-Fi Calling on your device, plan, or SIM.
+
+        Please remove phone numbers, subscriber identifiers, public IP addresses, and other personal or sensitive information before submitting.
+
+  - type: input
+    id: carrier
+    attributes:
+      label: Carrier
+      description: Enter the carrier selected in WiFi Lens.
+      placeholder: e.g. AT&T, Orange, or au
+    validations:
+      required: true
+
+  - type: input
+    id: region
+    attributes:
+      label: Country or region
+      placeholder: e.g. United States, France, or Japan
+    validations:
+      required: true
+
+  - type: input
+    id: plmn
+    attributes:
+      label: MCC/MNC
+      description: Enter the PLMN shown by the selected catalog preset, if available.
+      placeholder: e.g. 310-410
+
+  - type: input
+    id: target
+    attributes:
+      label: ePDG target
+      description: Paste the selected target FQDN, if the results screen shows one.
+      placeholder: e.g. epdg.epc.mnc410.mcc310.pub.3gppnetwork.org
+
+  - type: textarea
+    id: result
+    attributes:
+      label: Test result and observations
+      description: Include the result for discovery, DNS A/AAAA, path, and IKE checks, plus what you expected.
+      placeholder: Describe what WiFi Lens reported and what happened on the device or network.
+    validations:
+      required: true
+
+  - type: textarea
+    id: network_environment
+    attributes:
+      label: Network environment
+      description: Include relevant Wi-Fi, VPN, proxy, firewall, and DNS details. Do not include credentials or private addresses.
+      placeholder: e.g. home Wi-Fi, no VPN, system proxy enabled, custom DNS resolver
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest sequence that reproduces the result or problem.
+      placeholder: |
+        1. Open WiFi Lens Settings.
+        2. Open Wi-Fi Calling and select ...
+        3. Run the test.
+
+  - type: input
+    id: app_version
+    attributes:
+      label: WiFi Lens version
+      placeholder: e.g. 1.0.0 (Build 42)
+    validations:
+      required: true
+
+  - type: input
+    id: system_version
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.6
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed phone numbers, subscriber identifiers, public IP addresses, credentials, and other sensitive information.
+          required: true

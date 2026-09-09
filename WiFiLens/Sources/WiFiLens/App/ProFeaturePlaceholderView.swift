@@ -523,6 +523,108 @@ struct InsightsSkeletonView: View {
     }
 }
 
+struct WiFiCallingSkeletonView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            statusCard
+            carrierCard
+            probeCard
+        }
+    }
+
+    private var statusCard: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "wifi")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Color.primary.opacity(0.10)))
+
+            VStack(alignment: .leading, spacing: 6) {
+                line(widthRatio: 0.34, height: 10, opacity: 0.28)
+                line(widthRatio: 0.64, height: 8, opacity: 0.14)
+            }
+
+            Spacer(minLength: 8)
+
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.primary.opacity(0.10))
+                .frame(width: 58, height: 22)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardShape)
+    }
+
+    private var carrierCard: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 7) {
+                line(widthRatio: 0.28, height: 9, opacity: 0.24)
+                line(widthRatio: 0.52, height: 8, opacity: 0.14)
+            }
+
+            Spacer(minLength: 8)
+
+            RoundedRectangle(cornerRadius: 5)
+                .fill(Color.primary.opacity(0.12))
+                .frame(width: 86, height: 26)
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .padding(.trailing, 8)
+                }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardShape)
+    }
+
+    private var probeCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            line(widthRatio: 0.30, height: 10, opacity: 0.26)
+            probeRow
+            probeRow
+            probeRow
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardShape)
+    }
+
+    private var probeRow: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(Color.primary.opacity(0.16))
+                .frame(width: 8, height: 8)
+            line(widthRatio: 0.46, height: 8, opacity: 0.16)
+            Spacer(minLength: 8)
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.primary.opacity(0.10))
+                .frame(width: 42, height: 8)
+        }
+    }
+
+    private var cardShape: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color.primary.opacity(0.04))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+    }
+
+    private func line(widthRatio: CGFloat, height: CGFloat, opacity: Double) -> some View {
+        GeometryReader { geometry in
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.primary.opacity(opacity))
+                .frame(width: geometry.size.width * widthRatio, height: height)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: height)
+    }
+}
+
 struct RecordingSkeletonView: View {
     var body: some View {
         VStack(spacing: 0) {

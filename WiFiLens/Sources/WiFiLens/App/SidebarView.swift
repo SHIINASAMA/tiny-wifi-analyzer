@@ -6,6 +6,7 @@ enum SidebarPage: String, CaseIterable {
     case channels
     case interfaces
     case networkDiagnostics
+    case wifiCallingTest
     case roaming
     case bleScanner
     case apRadar
@@ -23,7 +24,7 @@ enum SidebarPage: String, CaseIterable {
 
     var requiresLocationAuthorization: Bool {
         switch self {
-        case .overview, .settings, .bleScanner, .timeline, .statistics, .insights, .networkDiagnostics:
+        case .overview, .settings, .bleScanner, .timeline, .statistics, .insights, .networkDiagnostics, .wifiCallingTest:
             false
         case .spectrum, .channels, .interfaces, .roaming, .apRadar:
             true
@@ -40,7 +41,7 @@ enum SidebarPage: String, CaseIterable {
 
     var requiresWiFi: Bool {
         switch self {
-        case .overview, .settings, .bleScanner, .timeline, .statistics, .insights, .networkDiagnostics:
+        case .overview, .settings, .bleScanner, .timeline, .statistics, .insights, .networkDiagnostics, .wifiCallingTest:
             false
         case .spectrum, .channels, .interfaces, .roaming, .apRadar:
             true
@@ -62,6 +63,7 @@ enum SidebarPage: String, CaseIterable {
         case .channels:   String(localized: "nav.channels", comment: "Channels sidebar navigation item")
         case .interfaces: String(localized: "nav.interfaces", comment: "Interfaces sidebar navigation item")
         case .networkDiagnostics: String(localized: "nav.network_diagnostics", comment: "Network Self-Check sidebar navigation item")
+        case .wifiCallingTest: String(localized: "nav.wifi_calling_test", comment: "Wi-Fi Calling Test sidebar navigation item")
         case .roaming:   String(localized: "nav.roaming_test", comment: "Roaming Test sidebar navigation item")
         case .bleScanner: String(localized: "nav.ble_scanner", comment: "BLE Scanner sidebar navigation item")
         case .apRadar: String(localized: "nav.apRadar", comment: "AP Radar sidebar navigation item")
@@ -86,6 +88,7 @@ enum SidebarPage: String, CaseIterable {
         case .channels:   "chart.bar.fill"
         case .interfaces: "cable.connector"
         case .networkDiagnostics: "stethoscope"
+        case .wifiCallingTest: "wifi"
         case .roaming:   "arrow.triangle.swap"
         case .bleScanner: "personalhotspot"
         case .apRadar: "dot.radiowaves.left.and.right"
@@ -109,8 +112,17 @@ enum SidebarPage: String, CaseIterable {
             .preview
         case .apRadar:
             .preview
+        case .wifiCallingTest:
+            SidebarPage.wifiCallingBadgeStyle(for: .current)
         default:
             nil
+        }
+    }
+
+    static func wifiCallingBadgeStyle(for config: BuildConfig) -> SidebarBadge.Style? {
+        switch config {
+        case .oss: return .pro
+        case .pro: return .preview
         }
     }
 
@@ -212,7 +224,7 @@ struct SidebarView: View {
             }
             Section {
                 sidebarGroupTitle(.tools)
-                ForEach([SidebarPage.spectrum, .channels, .interfaces, .networkDiagnostics, .roaming, .bleScanner, .apRadar], id: \.self) { page in
+                ForEach([SidebarPage.spectrum, .channels, .interfaces, .networkDiagnostics, .wifiCallingTest, .roaming, .bleScanner, .apRadar], id: \.self) { page in
                     if page == .bleScanner {
                         Label(title: { Text(page.label) }, icon: {
                             BluetoothIconShape()

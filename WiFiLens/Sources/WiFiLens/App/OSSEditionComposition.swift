@@ -102,6 +102,15 @@ enum EditionComposition {
                 customSkeleton: { InsightsSkeletonView() }
             )
             .accessibilityIdentifier("page-insights")
+        case .wifiCallingTest:
+            ProFeaturePlaceholderView(
+                featureName: String(localized: "pro.wifi_calling_test.title", comment: "Pro Wi-Fi Calling Test feature title"),
+                featureDescription: String(localized: "pro.wifi_calling_test.description", comment: "Pro Wi-Fi Calling Test feature description"),
+                featureIcon: "wifi",
+                campaign: .appStoreCampaignPreviewLock,
+                customSkeleton: { WiFiCallingSkeletonView() }
+            )
+            .accessibilityIdentifier("page-wifiCallingTest")
         default:
             EmptyView()
         }
