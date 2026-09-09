@@ -135,7 +135,12 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
     private let stdoutPipe = Pipe()
     private let stderrPipe = Pipe()
     private let outputLimit: Int
+    private let timeoutQueue = DispatchQueue(
+        label: "com.shiinalabs.wifi-lens.diagnostic-route-timeout",
+        qos: .utility
+    )
     private var continuation: CheckedContinuation<DiagnosticRouteProcessResult, Never>?
+    private var timeoutSource: DispatchSourceTimer?
     private var didFinish = false
 
     init(
@@ -156,15 +161,6 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
     }
 
     func run(timeout: Duration) async -> DiagnosticRouteProcessResult {
-        let timeoutTask = Task { [weak self] in
-            do {
-                try await Task.sleep(for: timeout)
-            } catch {
-                return
-            }
-            self?.finish(timedOut: true, cancelled: false)
-        }
-
         let result = await withCheckedContinuation { continuation in
             lock.lock()
             if didFinish {
@@ -178,13 +174,22 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
                 ))
             } else {
                 self.continuation = continuation
+                let timeoutSource = DispatchSource.makeTimerSource(queue: timeoutQueue)
+                timeoutSource.schedule(
+                    deadline: .now() + Self.dispatchInterval(for: timeout),
+                    leeway: .milliseconds(1)
+                )
+                timeoutSource.setEventHandler { [weak self] in
+                    self?.finish(timedOut: true, cancelled: false)
+                }
+                timeoutSource.resume()
+                self.timeoutSource = timeoutSource
                 lock.unlock()
                 DispatchQueue.global(qos: .utility).async { [self] in
                     execute()
                 }
             }
         }
-        timeoutTask.cancel()
         return result
     }
 
@@ -196,8 +201,13 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
         }
         let continuation = self.continuation
         self.continuation = nil
+        let timeoutSource = self.timeoutSource
+        self.timeoutSource = nil
         didFinish = true
         lock.unlock()
+
+        timeoutSource?.setEventHandler {}
+        timeoutSource?.cancel()
 
         if process.isRunning {
             process.terminate()
@@ -238,7 +248,12 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
         didFinish = true
         let continuation = self.continuation
         self.continuation = nil
+        let timeoutSource = self.timeoutSource
+        self.timeoutSource = nil
         lock.unlock()
+
+        timeoutSource?.setEventHandler {}
+        timeoutSource?.cancel()
 
         let shouldStop = timedOut || cancelled
         if shouldStop, process.isRunning {
@@ -268,5 +283,13 @@ final class DiagnosticRouteProcessExecution: @unchecked Sendable {
         let data = pipe.readDataToEndOfFile()
         let limited = data.prefix(outputLimit)
         return String(data: limited, encoding: .utf8) ?? ""
+    }
+
+    private static func dispatchInterval(for duration: Duration) -> DispatchTimeInterval {
+        let components = duration.components
+        let nanoseconds = Double(components.seconds) * 1_000_000_000
+            + Double(components.attoseconds) / 1_000_000_000
+        let clamped = min(max(nanoseconds, 0), Double(Int.max))
+        return .nanoseconds(Int(clamped))
     }
 }
