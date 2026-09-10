@@ -162,6 +162,8 @@ final class NetworkDiagnosticsViewModel {
     @ObservationIgnored private var runGeneration: UInt64 = 0
     @ObservationIgnored private var logSessionID: UUID?
     @ObservationIgnored private var logSessionStartedAt: ContinuousClock.Instant?
+    @ObservationIgnored private var logRunNumber = 0
+    @ObservationIgnored private var checkStartedAt: [NetworkDiagnosticCheckID: ContinuousClock.Instant] = [:]
 
     init(
     checks: [any DiagnosticCheck]? = nil,
@@ -210,6 +212,8 @@ final class NetworkDiagnosticsViewModel {
         results = [:]
         logStore.reset()
         logSessionID = UUID()
+        logRunNumber = 0
+        checkStartedAt.removeAll()
         logSessionStartedAt = ContinuousClock().now
         appendEvent(.sessionStarted)
         conclusion = nil
@@ -242,6 +246,7 @@ final class NetworkDiagnosticsViewModel {
             return
         }
         runGeneration &+= 1
+        let cancelledRunID = currentRunID
         currentRunID = nil
         activeTask?.cancel()
         activeTask = nil
@@ -254,6 +259,8 @@ final class NetworkDiagnosticsViewModel {
         )
         conclusion = nil
         phase = .completed
+        appendEvent(.cancelled, runID: cancelledRunID, pendingIDs: pendingCheckIDs)
+        checkStartedAt.removeAll()
     }
 
     func clearLogs() {
@@ -269,7 +276,13 @@ final class NetworkDiagnosticsViewModel {
             complete: false,
             requiredIDs: Set(checkIDs)
         )
-        appendEvent(.checkFinished, runID: runID, checkID: result.id)
+        let duration = checkStartedAt.removeValue(forKey: result.id).map {
+            Self.milliseconds($0.duration(to: ContinuousClock().now))
+        }
+        appendEvent(
+            .checkFinished, runID: runID, checkID: result.id,
+            result: DiagnosticLogResult(result), durationMilliseconds: duration
+        )
     }
 
     private func runSession(generation: UInt64) async {
@@ -370,7 +383,9 @@ final class NetworkDiagnosticsViewModel {
             }
             let runID = UUID()
             currentRunID = runID
-            appendEvent(.runStarted, runID: runID)
+            logRunNumber += 1
+            checkStartedAt.removeAll()
+            appendEvent(.runStarted, runID: runID, retainedIDs: retainedResults.map(\.id))
             let context: DiagnosticNetworkContext?
             if usesProductionChecks {
                 let remaining = await clock.now().duration(to: sessionDeadline)
@@ -510,6 +525,7 @@ final class NetworkDiagnosticsViewModel {
     private func beginCheck(_ id: NetworkDiagnosticCheckID, runID: UUID) {
         guard DiagnosticPublicationGate(activeRunID: currentRunID).accepts(runID) else { return }
         executionPhases[id] = .checking
+        checkStartedAt[id] = ContinuousClock().now
         appendEvent(.checkStarted, runID: runID, checkID: id)
     }
 
@@ -565,16 +581,17 @@ final class NetworkDiagnosticsViewModel {
         _ kind: DiagnosticEventKind,
         runID: UUID? = nil,
         checkID: NetworkDiagnosticCheckID? = nil,
-        reasonCode: String? = nil
+        reasonCode: String? = nil,
+        result: DiagnosticLogResult? = nil,
+        durationMilliseconds: Int64? = nil,
+        conclusion: NetworkDiagnosticConclusion? = nil,
+        pendingIDs: [NetworkDiagnosticCheckID] = [],
+        retainedIDs: [NetworkDiagnosticCheckID] = []
     ) {
         let eventRunID = runID ?? currentRunID ?? logSessionID ?? UUID()
         let elapsedMilliseconds: Int64
         if let startedAt = logSessionStartedAt {
-            let duration = startedAt.duration(to: ContinuousClock().now)
-            let components = duration.components
-            let milliseconds = Double(components.seconds) * 1_000
-                + Double(components.attoseconds) / 1_000_000_000_000_000
-            elapsedMilliseconds = Int64(max(0, milliseconds.rounded()))
+            elapsedMilliseconds = Self.milliseconds(startedAt.duration(to: ContinuousClock().now))
         } else {
             elapsedMilliseconds = 0
         }
@@ -583,8 +600,20 @@ final class NetworkDiagnosticsViewModel {
             elapsedMilliseconds: elapsedMilliseconds,
             kind: kind,
             checkID: checkID,
-            reasonCode: reasonCode
+            reasonCode: reasonCode,
+            runNumber: logRunNumber,
+            result: result,
+            durationMilliseconds: durationMilliseconds,
+            conclusion: conclusion,
+            pendingIDs: pendingIDs,
+            retainedIDs: retainedIDs
         ))
+    }
+
+    private static func milliseconds(_ duration: Duration) -> Int64 {
+        let components = duration.components
+        return Int64(max(0, (Double(components.seconds) * 1_000
+            + Double(components.attoseconds) / 1_000_000_000_000_000).rounded()))
     }
 
     private func finish(_ outcome: DiagnosticRunOutcome, generation: UInt64) {
@@ -608,7 +637,9 @@ final class NetworkDiagnosticsViewModel {
         appendEvent(
             endEvent,
             runID: outcome.runID,
-            reasonCode: outcome.endReason == .superseded ? "network-change" : nil
+            reasonCode: outcome.endReason == .superseded ? "network-change" : nil,
+            conclusion: conclusion,
+            pendingIDs: outcome.pendingIDs
         )
         if outcome.endReason == .completed, conclusion != nil {
             guidance.record(.diagnosticsCompleted)

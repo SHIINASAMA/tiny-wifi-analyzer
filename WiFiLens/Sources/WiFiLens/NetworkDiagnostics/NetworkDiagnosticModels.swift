@@ -74,7 +74,11 @@ struct NetworkDiagnosticsLogStore: Equatable, Sendable {
     }
 
     mutating func append(_ event: NetworkDiagnosticEvent) {
-        appendLine(event.formatted())
+        // Start events remain available for diagnostics, but only results and
+        // meaningful session transitions occupy the user-facing console.
+        if event.kind != .sessionStarted && event.kind != .checkStarted {
+            event.formattedLines.forEach { appendLine($0) }
+        }
         events.append(event)
         if events.count > Self.capacity - 1 {
             events.removeFirst(events.count - (Self.capacity - 1))

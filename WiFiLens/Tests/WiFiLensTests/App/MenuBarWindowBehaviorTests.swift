@@ -21,7 +21,7 @@ struct MenuBarWindowBehaviorTests {
         #expect(SidebarPage.networkDiagnostics.requiresLocationAuthorization == false)
         #expect(SidebarPage.networkDiagnostics.requiresWiFi == false)
         #expect(SidebarPage.networkDiagnostics.icon == "stethoscope")
-        #expect(SidebarPage.networkDiagnostics.badgeStyle == .preview)
+        #expect(SidebarPage.networkDiagnostics.badgeStyle == nil)
     }
 
     @Test("Pro sidebar badge uses paid-feature semantics")

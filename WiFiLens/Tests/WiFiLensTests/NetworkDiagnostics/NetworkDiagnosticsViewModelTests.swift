@@ -92,7 +92,7 @@ extension NetworkDiagnosticsTests {
             reasonCode: "raw-sensitive-value"
         )
 
-        #expect(event.formatted() == "42ms · Network changed; restarting (network state)")
+        #expect(event.message == "Network changed; restarting (network state)")
         #expect(!event.formatted().contains("raw-sensitive-value"))
     }
 
@@ -108,21 +108,13 @@ extension NetworkDiagnosticsTests {
         #expect(viewModel.start())
         await viewModel.waitForCompletion()
 
-        let stableLogLines = viewModel.logStore.lines.map { line in
-            guard let separator = line.range(of: " · ") else { return line }
-            return String(line[separator.upperBound...])
+        #expect(viewModel.logStore.lines.count == 5)
+        for title in ["Network Path", "DNS Resolution", "System Proxy"] {
+            #expect(viewModel.logText.contains(title + ": Normal"))
         }
-        #expect(stableLogLines == [
-            "Session started",
-            "Run started",
-            "Checking Network Path…",
-            "Network Path finished",
-            "Checking DNS Resolution…",
-            "DNS Resolution finished",
-            "Checking System Proxy…",
-            "System Proxy finished",
-            "Check completed",
-        ])
+        #expect(viewModel.logText.contains("Run 1"))
+        #expect(viewModel.logText.contains("Summary: Network normal"))
+        #expect(!viewModel.logText.contains("finished"))
         #expect(viewModel.logStore.events.map(\.kind) == [
             .sessionStarted,
             .runStarted,
@@ -137,6 +129,105 @@ extension NetworkDiagnosticsTests {
 
         viewModel.clearLogs()
         #expect(viewModel.logText.isEmpty)
+    }
+
+    @Test("diagnostic logs preserve probe failures without copying arbitrary result text")
+    @MainActor
+    func diagnosticLogsPreserveEvidence() async {
+        let result = NetworkDiagnosticResult(
+            id: .internet, status: .abnormal, summary: "private summary",
+            detail: "private detail",
+            evidence: [
+                .init(code: "https.connectivity-error", value: "-1001"),
+                .init(code: "captive-portal.clear", value: nil),
+                .init(code: "https.metrics.connect-ms", value: "12.5"),
+                .init(code: "unknown.private", value: "private payload"),
+            ]
+        )
+        let viewModel = NetworkDiagnosticsViewModel(
+            checks: [StubDiagnosticCheck(id: .internet, result: result, recorder: DiagnosticTestRecorder())],
+            fingerprintMonitor: DisabledNetworkFingerprintMonitor()
+        )
+        #expect(viewModel.start())
+        await viewModel.waitForCompletion()
+        #expect(viewModel.logText.contains("Abnormal"))
+        #expect(viewModel.logText.contains("HTTPS connection failed: timed out (-1001)"))
+        #expect(viewModel.logText.contains("HTTPS connect: 12.5 ms"))
+        #expect(viewModel.logText.contains("Summary:"))
+        #expect(!viewModel.logText.contains("private"))
+        let completion = viewModel.logStore.events.first { $0.kind == .checkFinished }
+        #expect(completion?.durationMilliseconds != nil)
+        #expect(completion?.runNumber == 1)
+        #expect(viewModel.logStore.lines.allSatisfy {
+            $0.range(of: #"^\d{2}:\d{2}:\d{2}\.\d{3}  "#, options: .regularExpression) != nil
+        })
+    }
+
+    @Test("diagnostic evidence preserves uncertainty and final proxy egress")
+    func diagnosticEvidenceSemantics() {
+        let gateway = DiagnosticLogResult(.init(
+            id: .gatewayReachability, status: .indeterminate, summary: "",
+            evidence: [.init(code: "gateway.no-response", value: "private-address")]
+        ))
+        #expect(gateway.details.contains { $0.contains("No ICMP reply") && $0.contains("does not prove") })
+        let blocked = DiagnosticLogResult(.init(
+            id: .dns, status: .blocked, summary: "",
+            evidence: [.init(code: "blocked.by", value: "path")]
+        ))
+        #expect(blocked.details == ["Not tested because Network Path failed"])
+        let ipv6 = DiagnosticLogResult(.init(
+            id: .ipv6, status: .skipped, summary: "",
+            evidence: [.init(code: "ipv6.no-global-address", value: nil)]
+        ))
+        #expect(ipv6.details == ["No global IPv6 address; probe skipped"])
+        let proxy = DiagnosticLogResult(.init(
+            id: .proxy, status: .normal, summary: "",
+            evidence: [
+                .init(code: "proxy.https.candidate-index", value: "0"),
+                .init(code: "proxy.https.endpoint-status", value: "unavailable"),
+                .init(code: "proxy.https.candidate-index", value: "1"),
+                .init(code: "proxy.https.egress-status", value: "200"),
+            ],
+            proxyFacts: .init(http: .unavailable, https: .available)
+        ))
+        #expect(proxy.details.contains("Proxy HTTPS candidate 2"))
+        #expect(proxy.details.suffix(2) == ["Final HTTP egress: unavailable", "Final HTTPS egress: available"])
+    }
+
+    @Test("diagnostic evidence excludes addresses, arbitrary payloads and injected log lines")
+    func diagnosticEvidencePrivacy() {
+        let projection = DiagnosticLogResult(.init(
+            id: .dns, status: .indeterminate, summary: "secret summary", detail: "secret detail",
+            evidence: [
+                .init(code: "path.local-ip", value: "secret-address"),
+                .init(code: "path.interface", value: "en0\nsecret"),
+                .init(code: "dns.sample.secret", value: "resolved"),
+                .init(code: "dns.sample.apple", value: "secret"),
+                .init(code: "https.metrics.connect-ms", value: "nan"),
+                .init(code: "proxy.https.egress-status", value: "secret"),
+                .init(code: "https.transport-error", value: "secret"),
+                .init(code: "dns.sample.microsoft", value: "failed"),
+            ]
+        ))
+        #expect(!projection.details.joined().contains("secret"))
+        #expect(!projection.details.joined().contains("nan"))
+        #expect(!projection.details.joined().contains("\n"))
+        #expect(projection.details.contains("DNS sample microsoft: failed"))
+    }
+
+    @Test("diagnostic timestamps include milliseconds and timeout summaries name unfinished checks")
+    func diagnosticTimestampAndTimeoutSummary() {
+        let timestamp = Calendar.current.date(from: DateComponents(year: 2026, month: 9, day: 10,
+                                                                   hour: 14, minute: 32, second: 8))!
+            .addingTimeInterval(0.125)
+        let event = NetworkDiagnosticEvent(
+            runID: UUID(), elapsedMilliseconds: 30_000, kind: .timedOut, checkID: nil, reasonCode: nil,
+            timestamp: timestamp, runNumber: 2, pendingIDs: [.dns, .internet]
+        )
+        #expect(event.formatted().hasPrefix("14:32:08.125  Run 2"))
+        #expect(event.message.contains("Timed out"))
+        #expect(event.message.contains("unfinished: DNS Resolution, Internet Access"))
+        #expect(event.message.contains("30000 ms total"))
     }
 
     @Test("view model clears the previous conclusion before a rerun")
@@ -197,6 +288,9 @@ extension NetworkDiagnosticsTests {
         #expect(viewModel.phase == .completed)
         #expect(viewModel.conclusion == .networkNormal)
         #expect(viewModel.automaticRestartCount == 1)
+        #expect(viewModel.logText.contains("Run 2"))
+        #expect(viewModel.logText.contains("Network changed; restarting"))
+        #expect(viewModel.logText.contains("retained: System Proxy"))
         #expect(await configurationProbe.invocationCount == 1)
         #expect(await networkProbe.invocationCount == 2)
         #expect(viewModel.results[.proxy]?.summary == "configuration")
@@ -385,6 +479,8 @@ extension NetworkDiagnosticsTests {
         #expect(viewModel.phase == .completed)
         #expect(viewModel.conclusion == nil)
         #expect(viewModel.endReason == .cancelled)
+        #expect(viewModel.logText.contains("Summary: Cancelled by user"))
+        #expect(viewModel.logText.contains("unfinished: Network Path"))
     }
 
     @Test("a cancelled run cannot overwrite a replacement run")

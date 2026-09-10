@@ -108,8 +108,6 @@ enum SidebarPage: String, CaseIterable {
 
     var badgeStyle: SidebarBadge.Style? {
         switch self {
-        case .networkDiagnostics:
-            .preview
         case .apRadar:
             .preview
         case .wifiCallingTest:

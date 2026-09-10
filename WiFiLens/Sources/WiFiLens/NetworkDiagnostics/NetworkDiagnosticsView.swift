@@ -152,7 +152,7 @@ struct NetworkDiagnosticsView: View {
         case .running:
             HStack(spacing: 7) {
                 ProgressView().controlSize(.mini)
-                Text(viewModel.logStore.lines.last ?? String(localized: "network_diagnostics.state.checking", comment: "Network self-check running state"))
+                Text(viewModel.logStore.events.last?.message ?? String(localized: "network_diagnostics.state.checking", comment: "Network self-check running state"))
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -1053,22 +1053,36 @@ struct NetworkDiagnosticsPipelineView: View {
                     railLine(color: color, dashed: true)
                 }
             } else {
-                HStack(spacing: 0) {
-                    railLine(color: color, dashed: false)
-                    Image(systemName: "arrowtriangle.right.fill")
-                        .font(.system(size: 8))
-                        .foregroundStyle(color)
-                }
+                railLine(color: color, dashed: false, arrowhead: true)
             }
         }
         .frame(height: 20)
     }
 
-    private func railLine(color: Color, dashed: Bool) -> some View {
-        Rectangle()
-            .stroke(color, style: StrokeStyle(lineWidth: 3, dash: dashed ? [7, 5] : []))
-            .frame(height: 3)
-            .frame(maxWidth: .infinity)
+    private func railLine(color: Color, dashed: Bool, arrowhead: Bool = false) -> some View {
+        GeometryReader { geometry in
+            Path { path in
+                let inset: CGFloat = 1.5
+                let centerY = geometry.size.height / 2
+                let tipX = max(inset, geometry.size.width - inset)
+                path.move(to: CGPoint(x: inset, y: centerY))
+                path.addLine(to: CGPoint(x: tipX, y: centerY))
+                if arrowhead {
+                    let shoulderX = max(inset, tipX - 5)
+                    path.move(to: CGPoint(x: shoulderX, y: centerY - 4))
+                    path.addLine(to: CGPoint(x: tipX, y: centerY))
+                    path.addLine(to: CGPoint(x: shoulderX, y: centerY + 4))
+                }
+            }
+            .stroke(color, style: StrokeStyle(
+                lineWidth: 2.5,
+                lineCap: .round,
+                lineJoin: .round,
+                dash: dashed ? [7, 5] : []
+            ))
+        }
+        .frame(height: 14)
+        .frame(maxWidth: .infinity)
     }
 
     private func edgeColor(_ edge: NetworkDiagnosticsPipelinePresentation.Edge) -> Color {
