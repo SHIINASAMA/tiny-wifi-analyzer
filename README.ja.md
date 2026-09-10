@@ -192,6 +192,7 @@ WiFi Lens は利用状況の分析、クラッシュテレメトリ、Wi-Fi ス�
 **macOS 14 (Sonoma) 以降**が必要です。Intel Mac と Apple Silicon の両方で動作します。6 GHz スキャンには Wi-Fi 6E/7 ハードウェアが必要です。
 
 - **オープンソース版** — [GitHub Releases](https://github.com/SHIINASAMA/wifi-lens/releases/latest)（無料、Sparkle 自動更新）
+- **Homebrew** — `brew tap ShiinaLabs/apps && brew install --cask ShiinaLabs/apps/wifi-lens` でインストール
 - **WiFi Lens Pro** — [Mac App Store](https://apps.apple.com/app/apple-store/id6776590746?pt=128979395&ct=github_readme&mt=8)。時間軸でのモニタリング、記録、原因調査に
 
 <p align="center">

@@ -192,6 +192,7 @@ WiFi Lens does not collect usage analytics, crash telemetry, or Wi-Fi scan data.
 Requires **macOS 14 (Sonoma) or later**. Works on both Intel and Apple Silicon. 6 GHz scanning requires Wi-Fi 6E/7 hardware.
 
 - **Open-source edition** — [GitHub Releases](https://github.com/SHIINASAMA/wifi-lens/releases/latest) (free, Sparkle auto-updates)
+- **Homebrew** — install with `brew tap ShiinaLabs/apps && brew install --cask ShiinaLabs/apps/wifi-lens`
 - **WiFi Lens Pro** — [Mac App Store](https://apps.apple.com/app/apple-store/id6776590746?pt=128979395&ct=github_readme&mt=8) for monitoring, recording, and investigating problems over time
 
 <p align="center">

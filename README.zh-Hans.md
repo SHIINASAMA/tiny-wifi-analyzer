@@ -192,6 +192,7 @@ WiFi Lens 不收集使用分析、崩溃遥测或 Wi-Fi 扫描数据。
 需要 **macOS 14 (Sonoma) 或更高版本**。支持 Intel 和 Apple Silicon Mac。6 GHz 扫描需要 Wi-Fi 6E/7 硬件。
 
 - **开源版** — [GitHub Releases](https://github.com/SHIINASAMA/wifi-lens/releases/latest)（免费，Sparkle 自动更新）
+- **Homebrew** — 使用 `brew tap ShiinaLabs/apps && brew install --cask ShiinaLabs/apps/wifi-lens` 安装
 - **WiFi Lens Pro** — [Mac App Store](https://apps.apple.com/app/apple-store/id6776590746?pt=128979395&ct=github_readme&mt=8)，用于长期监控、录制和调查问题
 
 <p align="center">
