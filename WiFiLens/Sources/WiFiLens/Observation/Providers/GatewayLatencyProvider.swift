@@ -6,9 +6,20 @@ protocol GatewayLatencyProviding: Sendable {
 
 protocol GatewayPinging: Sendable {
     func ping(host: String) async -> Double?
+    func ping(target: DiagnosticGatewayTarget) async -> Double?
+}
+
+extension GatewayPinging {
+    /// Address-only callers cannot safely provide interface binding. Diagnostics
+    /// must inject a target-aware implementation instead of falling back here.
+    func ping(target: DiagnosticGatewayTarget) async -> Double? { nil }
 }
 
 extension GatewayPinger: GatewayPinging {}
+
+protocol DiagnosticGatewayMeasuring: Sendable {
+    func measure(target: DiagnosticGatewayTarget) async -> GatewayLatencyResult
+}
 
 struct GatewayLatencyProvider: GatewayLatencyProviding {
     private let pinger: GatewayPinging
@@ -38,4 +49,22 @@ struct GatewayLatencyProvider: GatewayLatencyProviding {
             latencyMs: latency
         )
     }
+
+    func measure(target: DiagnosticGatewayTarget) async -> GatewayLatencyResult {
+        let latency = await pinger.ping(target: target)
+        guard let latency else {
+            return GatewayLatencyResult(
+                timestamp: Date(),
+                routerIP: target.address,
+                error: .gatewayPingFailed(target.address)
+            )
+        }
+        return GatewayLatencyResult(
+            timestamp: Date(),
+            routerIP: target.address,
+            latencyMs: latency
+        )
+    }
 }
+
+extension GatewayLatencyProvider: DiagnosticGatewayMeasuring {}

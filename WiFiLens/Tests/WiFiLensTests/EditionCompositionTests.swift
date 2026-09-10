@@ -284,8 +284,9 @@ struct EditionCompositionTests {
         let replyProbe = TerminationBoolProbe()
         var steps: [String] = []
         let coordinator = ApplicationTerminationCoordinator(
-            waitForDeadline: { _ in
-                await withCheckedContinuation { (_: CheckedContinuation<Void, Never>) in }
+            terminationDeadline: .seconds(60),
+            waitForDeadline: { duration in
+                try await Task.sleep(for: duration)
             },
             reply: { replyProbe.record($0) }
         )

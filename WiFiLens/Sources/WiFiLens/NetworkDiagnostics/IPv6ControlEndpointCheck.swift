@@ -225,10 +225,15 @@ struct SystemIPv6AddressResolver: IPv6AddressResolving {
                     }
                 )
 
-                Task {
-                    try? await Task.sleep(for: timeout)
-                    context.finish()
+                let timeoutTask = Task { [context] in
+                    do {
+                        try await Task.sleep(for: timeout)
+                        context.finish()
+                    } catch {
+                        // The DNS callback completed or the caller cancelled.
+                    }
                 }
+                context.install(timeoutTask: timeoutTask)
             }
         } onCancel: {
             context.cancel()
@@ -272,10 +277,12 @@ private final class IPv6ResolutionContext: @unchecked Sendable {
     private var serviceRef: DNSServiceRef?
     private var addresses: [String] = []
     private var cancellationRequested = false
+    private var didFinish = false
+    private var timeoutTask: Task<Void, Never>?
 
     func install(continuation: CheckedContinuation<[String], Never>) -> Bool {
         lock.lock()
-        guard !cancellationRequested else {
+        guard !cancellationRequested, !didFinish else {
             lock.unlock()
             continuation.resume(returning: [])
             return false
@@ -287,12 +294,23 @@ private final class IPv6ResolutionContext: @unchecked Sendable {
 
     func install(serviceRef: DNSServiceRef) {
         lock.lock()
-        if continuation == nil {
+        if didFinish || continuation == nil {
             lock.unlock()
             DNSServiceRefDeallocate(serviceRef)
             return
         }
         self.serviceRef = serviceRef
+        lock.unlock()
+    }
+
+    func install(timeoutTask: Task<Void, Never>) {
+        lock.lock()
+        if didFinish {
+            lock.unlock()
+            timeoutTask.cancel()
+            return
+        }
+        self.timeoutTask = timeoutTask
         lock.unlock()
     }
 
@@ -307,20 +325,25 @@ private final class IPv6ResolutionContext: @unchecked Sendable {
 
     func finish() {
         lock.lock()
-        guard let continuation else {
+        guard !didFinish else {
             lock.unlock()
             return
         }
+        didFinish = true
+        let continuation = self.continuation
         self.continuation = nil
         let serviceRef = self.serviceRef
         self.serviceRef = nil
         let addresses = self.addresses
+        let timeoutTask = self.timeoutTask
+        self.timeoutTask = nil
         lock.unlock()
 
         if let serviceRef {
             DNSServiceRefDeallocate(serviceRef)
         }
-        continuation.resume(returning: addresses)
+        timeoutTask?.cancel()
+        continuation?.resume(returning: addresses)
     }
 
     func cancel() {
@@ -373,10 +396,15 @@ struct NetworkIPv6HTTPSConnector: IPv6HTTPSConnecting {
                 connection.start(queue: DispatchQueue(
                     label: "io.github.kaoru.wifi-lens.network-diagnostics.ipv6-https"
                 ))
-                Task {
-                    try? await Task.sleep(for: timeout)
-                    context.finish(false)
+                let timeoutTask = Task { [context] in
+                    do {
+                        try await Task.sleep(for: timeout)
+                        context.finish(false)
+                    } catch {
+                        // The connection completed or the caller cancelled.
+                    }
                 }
+                context.install(timeoutTask: timeoutTask)
             }
         } onCancel: {
             context.cancel()
@@ -402,6 +430,8 @@ private final class IPv6HTTPSConnectionContext: @unchecked Sendable {
     private var response = Data()
     private var requestSent = false
     private var cancellationRequested = false
+    private var didFinish = false
+    private var timeoutTask: Task<Void, Never>?
 
     init(
         connection: NWConnection,
@@ -413,7 +443,7 @@ private final class IPv6HTTPSConnectionContext: @unchecked Sendable {
 
     func install(continuation: CheckedContinuation<Bool, Never>) -> Bool {
         lock.lock()
-        guard !cancellationRequested else {
+        guard !cancellationRequested, !didFinish else {
             lock.unlock()
             connection.cancel()
             continuation.resume(returning: false)
@@ -422,6 +452,17 @@ private final class IPv6HTTPSConnectionContext: @unchecked Sendable {
         self.continuation = continuation
         lock.unlock()
         return true
+    }
+
+    func install(timeoutTask: Task<Void, Never>) {
+        lock.lock()
+        if didFinish {
+            lock.unlock()
+            timeoutTask.cancel()
+            return
+        }
+        self.timeoutTask = timeoutTask
+        lock.unlock()
     }
 
     func sendRequest() {
@@ -445,14 +486,20 @@ private final class IPv6HTTPSConnectionContext: @unchecked Sendable {
 
     func finish(_ succeeded: Bool) {
         lock.lock()
-        guard let continuation else {
+        guard !didFinish else {
             lock.unlock()
             return
         }
+        didFinish = true
+        let continuation = self.continuation
         self.continuation = nil
+        let timeoutTask = self.timeoutTask
+        self.timeoutTask = nil
         lock.unlock()
+        timeoutTask?.cancel()
+        connection.stateUpdateHandler = nil
         connection.cancel()
-        continuation.resume(returning: succeeded)
+        continuation?.resume(returning: succeeded)
     }
 
     func cancel() {

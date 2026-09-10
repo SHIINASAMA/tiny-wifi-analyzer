@@ -2,10 +2,110 @@ import Foundation
 
 enum NetworkDiagnosticStatus: String, CaseIterable, Equatable, Sendable {
     case normal, abnormal, indeterminate, blocked, skipped
+
+    var logTitle: String {
+        switch self {
+        case .normal:
+            "Normal"
+        case .abnormal:
+            "Abnormal"
+        case .indeterminate:
+            "Indeterminate"
+        case .blocked:
+            "Blocked"
+        case .skipped:
+            "Skipped"
+        }
+    }
 }
 
 enum NetworkDiagnosticCheckID: String, CaseIterable, Equatable, Hashable, Sendable {
     case path, gatewayReachability, dns, internet, ipv6, proxy
+
+    var logTitle: String {
+        switch self {
+        case .path:
+            "Network Path"
+        case .gatewayReachability:
+            "Gateway Reachability"
+        case .dns:
+            "DNS Resolution"
+        case .internet:
+            "Internet Access"
+        case .ipv6:
+            "IPv6 Connectivity"
+        case .proxy:
+            "System Proxy"
+        }
+    }
+
+    var localizedTitle: String {
+        switch self {
+        case .path:
+            String(localized: "network_diagnostics.check.path.title", comment: "Network system path check title")
+        case .gatewayReachability:
+            String(localized: "network_diagnostics.check.gateway_reachability.title", comment: "Gateway reachability check title")
+        case .dns:
+            String(localized: "network_diagnostics.check.dns.title", comment: "DNS resolution check title")
+        case .internet:
+            String(localized: "network_diagnostics.check.internet.title", comment: "Internet access check title")
+        case .ipv6:
+            String(localized: "network_diagnostics.check.ipv6.title", comment: "Optional forced IPv6 access check title")
+        case .proxy:
+            String(localized: "network_diagnostics.check.proxy.title", comment: "System proxy check title")
+        }
+    }
+}
+
+struct NetworkDiagnosticsLogStore: Equatable, Sendable {
+    static let capacity = 500
+    static let truncationMarker = "… earlier diagnostic events omitted …"
+
+    private(set) var lines: [String] = []
+    private(set) var events: [NetworkDiagnosticEvent] = []
+    private var hasTruncationMarker = false
+
+    var text: String {
+        lines.joined(separator: "\n")
+    }
+
+    mutating func append(_ line: String) {
+        appendLine(line)
+    }
+
+    mutating func append(_ event: NetworkDiagnosticEvent) {
+        appendLine(event.formatted())
+        events.append(event)
+        if events.count > Self.capacity - 1 {
+            events.removeFirst(events.count - (Self.capacity - 1))
+        }
+    }
+
+    private mutating func appendLine(_ line: String) {
+        if lines.count >= Self.capacity {
+            if hasTruncationMarker {
+                if lines.count > 1 {
+                    lines.remove(at: 1)
+                } else {
+                    lines.removeFirst()
+                }
+            } else {
+                lines.removeFirst()
+                lines.insert(Self.truncationMarker, at: 0)
+                hasTruncationMarker = true
+            }
+            if lines.count >= Self.capacity {
+                lines.removeLast()
+            }
+        }
+        lines.append(line)
+    }
+
+    mutating func reset() {
+        lines.removeAll(keepingCapacity: true)
+        events.removeAll(keepingCapacity: true)
+        hasTruncationMarker = false
+    }
 }
 
 enum NetworkDiagnosticStatusTone: Equatable, Sendable {
@@ -37,6 +137,13 @@ extension NetworkDiagnosticStatus {
             .init(labelKey: "network_diagnostics.status.skipped", icon: "forward.fill", tone: .muted)
         }
     }
+
+    var localizedTitle: String {
+        String(
+            localized: .init(stringLiteral: presentation.labelKey),
+            comment: "Network self-check status title"
+        )
+    }
 }
 
 struct NetworkDiagnosticEvidence: Equatable, Sendable {
@@ -51,7 +158,22 @@ struct NetworkDiagnosticRemediation: Equatable, Sendable {
     let rerunKey: String
 
     static func forResult(_ result: NetworkDiagnosticResult) -> Self {
-        let codes = Set(result.evidence.map(\.code))
+        var codes = Set(result.evidence.map(\.code))
+        if result.id == .proxy, let facts = result.proxyFacts {
+            if facts.http != .authenticationRequired && facts.https != .authenticationRequired {
+                codes.remove("proxy.authentication-required")
+                codes.remove("proxy.http.authentication-required")
+                codes.remove("proxy.https.authentication-required")
+            }
+            if facts.http != .unavailable && facts.https != .unavailable {
+                codes.remove("proxy.endpoint-unavailable")
+                codes.remove("proxy.egress-unavailable")
+                codes.remove("proxy.http.endpoint-unavailable")
+                codes.remove("proxy.https.endpoint-unavailable")
+                codes.remove("proxy.http.egress-unavailable")
+                codes.remove("proxy.https.egress-unavailable")
+            }
+        }
         let base: (String, String, String) = if codes.contains("proxy.authentication-required") {
             (
                 "network_diagnostics.remediation.proxy_authentication.detection",
@@ -113,12 +235,13 @@ struct NetworkDiagnosticRemediation: Equatable, Sendable {
 
 extension NetworkDiagnosticConclusion {
     static func primaryIssue(in results: [NetworkDiagnosticResult]) -> NetworkDiagnosticResult? {
-        let priority: [NetworkDiagnosticCheckID] = [.path, .gatewayReachability, .dns, .internet, .proxy]
-        return priority.compactMap { id in
-            results.first {
-                $0.id == id && ($0.status == .abnormal || $0.status == .indeterminate)
-            }
-        }.first
+        let resultsByID = Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) })
+        return NetworkDiagnosticAssessmentResolver()
+            .resolve(
+                results: resultsByID,
+                complete: Set(resultsByID.keys) == Set(NetworkDiagnosticCheckID.allCases)
+            )
+            .primaryIssue
     }
 }
 
@@ -141,20 +264,11 @@ struct NetworkDiagnosticStageResolver: Sendable {
         for stage: NetworkDiagnosticStage,
         results: [NetworkDiagnosticCheckID: NetworkDiagnosticResult]
     ) -> NetworkDiagnosticStatus? {
-        let contributingIDs = stage.contributingCheckIDs
-        let contributing = contributingIDs.compactMap { results[$0] }
-        guard contributing.count == contributingIDs.count else { return nil }
-
-        if contributing.contains(where: { $0.status == .abnormal }) {
-            return .abnormal
-        }
-        if contributing.contains(where: { $0.status == .indeterminate }) {
-            return .indeterminate
-        }
-        if contributing.allSatisfy({ $0.status == .blocked }) {
-            return .blocked
-        }
-        return .normal
+        NetworkDiagnosticAssessmentResolver()
+            .resolve(results: results, complete: false)
+            .stages
+            .first { $0.stage == stage }?
+            .status
     }
 }
 
@@ -164,19 +278,22 @@ struct NetworkDiagnosticResult: Equatable, Identifiable, Sendable {
     let summary: String
     let detail: String?
     let evidence: [NetworkDiagnosticEvidence]
+    let proxyFacts: DiagnosticProxyFacts?
 
     init(
         id: NetworkDiagnosticCheckID,
         status: NetworkDiagnosticStatus,
         summary: String,
         detail: String? = nil,
-        evidence: [NetworkDiagnosticEvidence] = []
+        evidence: [NetworkDiagnosticEvidence] = [],
+        proxyFacts: DiagnosticProxyFacts? = nil
     ) {
         self.id = id
         self.status = status
         self.summary = summary
         self.detail = detail
         self.evidence = evidence
+        self.proxyFacts = proxyFacts
     }
 
     static func blocked(id: NetworkDiagnosticCheckID, summary: String) -> Self {
@@ -194,54 +311,13 @@ enum NetworkDiagnosticConclusion: String, Equatable, Sendable {
         requiredIDs: Set<NetworkDiagnosticCheckID> = Set(NetworkDiagnosticCheckID.allCases)
     ) -> Self? {
         let resultsByID = Dictionary(uniqueKeysWithValues: results.map { ($0.id, $0) })
-        guard Set(resultsByID.keys) == requiredIDs else {
-            return nil
-        }
-
-        if resultsByID[.path]?.status == .abnormal {
-            return .networkUnavailable
-        }
-        if let internet = resultsByID[.internet],
-           internet.status == .abnormal,
-           !internet.evidence.contains(where: { $0.code == "https.available" }),
-           !hasAvailableHTTPSProxy(resultsByID[.proxy]),
-           internet.evidence.contains(where: { $0.code == "https.connectivity-error" }) {
-            return .networkUnavailable
-        }
-        if resultsByID.values.contains(where: { result in
-            result.status != .normal
-                && result.id != .ipv6
-                && !isUnverifiedDirectRouteNeutral(
-                    result,
-                    internet: resultsByID[.internet]
-                )
-        }) {
-            return .needsAttention
-        }
-        return .networkNormal
-    }
-
-    private static func hasAvailableHTTPSProxy(_ result: NetworkDiagnosticResult?) -> Bool {
-        guard result?.status == .normal else { return false }
-        return result?.evidence.contains { evidence in
-            guard evidence.code == "proxy.https.egress-status",
-                  let value = evidence.value,
-                  let statusCode = Int(value) else {
-                return false
-            }
-            return (200..<300).contains(statusCode)
-        } == true
-    }
-
-    private static func isUnverifiedDirectRouteNeutral(
-        _ result: NetworkDiagnosticResult,
-        internet: NetworkDiagnosticResult?
-    ) -> Bool {
-        result.id == .proxy
-            && result.status == .indeterminate
-            && internet?.status == .normal
-            && result.evidence.contains { evidence in
-                evidence.code.hasSuffix(".egress-status") && evidence.value == "base-check"
-            }
+        guard Set(resultsByID.keys) == requiredIDs else { return nil }
+        return NetworkDiagnosticAssessmentResolver()
+            .resolve(
+                results: resultsByID,
+                complete: true,
+                requiredIDs: requiredIDs
+            )
+            .conclusion
     }
 }

@@ -1,59 +1,86 @@
 import Foundation
 
+protocol GatewayPingProcessRunning: Sendable {
+    func run(executablePath: String, arguments: [String]) async -> Double?
+    func cancel() async
+}
+
 actor GatewayPinger {
+    private let processRunner: any GatewayPingProcessRunning
+
+    init(processRunner: any GatewayPingProcessRunning = SystemGatewayPingProcessRunner()) {
+        self.processRunner = processRunner
+    }
+
+    func ping(host: String) async -> Double? {
+        await ping(arguments: ["-c", "1", "-W", "1000", host])
+    }
+
+    func ping(target: DiagnosticGatewayTarget) async -> Double? {
+        await ping(arguments: DiagnosticPingArguments.make(target: target))
+    }
+
+    private func ping(arguments: [String]) async -> Double? {
+        await processRunner.cancel()
+        return await withTaskCancellationHandler {
+            await processRunner.run(executablePath: "/sbin/ping", arguments: arguments)
+        } onCancel: {
+            Task { await processRunner.cancel() }
+        }
+    }
+}
+
+actor SystemGatewayPingProcessRunner: GatewayPingProcessRunning {
     /// Overall budget for a single ping, including process startup. Kept just
     /// above the `-W 1000` ping timeout so an unreachable gateway is normally
     /// reported by the process itself, while still bounding the wait if the
     /// process ever hangs.
     private static let pingTimeout: Duration = .milliseconds(1500)
 
-    private var lastTask: Task<Double?, Never>?
-    private var currentProcess: Process?
+    private var currentState: PingWaitState?
 
-    func ping(host: String) async -> Double? {
-        lastTask?.cancel()
-        currentProcess?.terminate()
-
-        let task = Task<Double?, Never> { [host] in
-            await self.runPing(host: host)
-        }
-        lastTask = task
-        return await task.value
-    }
-
-    private func runPing(host: String) async -> Double? {
+    func run(executablePath: String, arguments: [String]) async -> Double? {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/sbin/ping")
-        process.arguments = ["-c", "1", "-W", "1000", host]
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = arguments
 
         let pipe = Pipe()
         process.standardOutput = pipe
-
-        currentProcess = process
+        let state = PingWaitState(process: process)
+        currentState = state
 
         do {
             try process.run()
         } catch {
+            currentState = nil
             return nil
         }
 
-        guard await Self.waitForExit(process) == 0,
-              !Task.isCancelled
-        else {
-            return nil
+        let status = await withTaskCancellationHandler {
+            await Self.waitForExit(state)
+        } onCancel: {
+            state.terminate()
+        }
+        if currentState === state {
+            currentState = nil
         }
 
+        guard status == 0, !Task.isCancelled else { return nil }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         guard let output = String(data: data, encoding: .utf8) else { return nil }
+        return Self.parseLatency(from: output)
+    }
 
+    func cancel() {
+        currentState?.terminate()
+    }
+
+    private static func parseLatency(from output: String) -> Double? {
         for line in output.components(separatedBy: "\n") {
-            if line.contains("time=") {
-                if let range = line.range(of: "time=") {
-                    let rest = line[range.upperBound...]
-                    let msStr = rest.components(separatedBy: " ").first ?? ""
-                    return Double(msStr)
-                }
-            }
+            guard let range = line.range(of: "time=") else { continue }
+            let rest = line[range.upperBound...]
+            let milliseconds = rest.components(separatedBy: " ").first ?? ""
+            return Double(milliseconds)
         }
         return nil
     }
@@ -63,9 +90,7 @@ actor GatewayPinger {
     /// process immediately so the caller gets `nil` quickly instead of waiting
     /// out the ping timeout; a timeout task is the backstop if the process
     /// hangs.
-    private static func waitForExit(_ process: Process) async -> Int32 {
-        let state = PingWaitState(process: process)
-
+    private static func waitForExit(_ state: PingWaitState) async -> Int32 {
         let timeoutTask = Task { [state] in
             do {
                 try await Task.sleep(for: Self.pingTimeout)
@@ -75,19 +100,15 @@ actor GatewayPinger {
             state.terminate()
         }
 
-        let status = await withTaskCancellationHandler {
-            await withCheckedContinuation { (continuation: CheckedContinuation<Int32, Never>) in
-                state.process.terminationHandler = { [state] terminatedProcess in
-                    _ = state.resumeIfNeeded(continuation, status: terminatedProcess.terminationStatus)
-                }
-                // Cover the race where the process exited before the handler
-                // was installed.
-                if !state.process.isRunning {
-                    _ = state.resumeIfNeeded(continuation, status: state.process.terminationStatus)
-                }
+        let status = await withCheckedContinuation { (continuation: CheckedContinuation<Int32, Never>) in
+            state.process.terminationHandler = { [state] terminatedProcess in
+                _ = state.resumeIfNeeded(continuation, status: terminatedProcess.terminationStatus)
             }
-        } onCancel: {
-            state.terminate()
+            // Cover the race where the process exited before the handler
+            // was installed.
+            if !state.process.isRunning {
+                _ = state.resumeIfNeeded(continuation, status: state.process.terminationStatus)
+            }
         }
 
         timeoutTask.cancel()

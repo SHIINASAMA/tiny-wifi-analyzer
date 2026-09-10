@@ -29,6 +29,19 @@ struct ProxyTargetRouteResult: Equatable, Sendable {
     let selectedCandidateIndex: Int?
     let selectedProxy: EffectiveProxy?
     let evidence: [NetworkDiagnosticEvidence]
+
+    var diagnosticAvailability: DiagnosticRouteAvailability {
+        switch status {
+        case .proxied:
+            .available
+        case .authenticationRequired:
+            .authenticationRequired
+        case .unavailable:
+            .unavailable
+        case .direct, .tunnel, .indeterminate:
+            .unverified
+        }
+    }
 }
 
 protocol ProxyResolving: Sendable {

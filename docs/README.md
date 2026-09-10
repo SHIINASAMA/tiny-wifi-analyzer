@@ -10,6 +10,7 @@ This directory contains project documentation for human maintainers and agents.
 | [ISSUES.md](ISSUES.md) | Current known defects, regressions, and deferred items |
 | [2026-09-02-aggregate-spectrum-heatmap.md](superpowers/plans/2026-09-02-aggregate-spectrum-heatmap.md) | Implementation plan for the aggregate Spectrum Heatmap |
 | [2026-09-03-gpu-heatmap-computation.md](superpowers/plans/2026-09-03-gpu-heatmap-computation.md) | Implementation plan for Metal-backed Heatmap field computation |
+| [2026-09-09-network-diagnostics-hardening.md](superpowers/plans/2026-09-09-network-diagnostics-hardening.md) | Complete self-check hardening plan, prioritizing correct gateway selection and interface-bound probing |
 
 `TODO.md` records work that has not been done yet. Completed items are removed
 rather than archived. `ISSUES.md` records active problems and explicitly
@@ -21,6 +22,7 @@ context.
 | File | Purpose |
 |------|---------|
 | [2026-09-02-aggregate-spectrum-heatmap-design.md](superpowers/specs/2026-09-02-aggregate-spectrum-heatmap-design.md) | Aggregate current-scan Heatmap using shared Spectrum envelopes |
+| [2026-09-09-network-diagnostics-hardening-design.md](superpowers/specs/2026-09-09-network-diagnostics-hardening-design.md) | Proposed network self-check fixes for route selection, partial reports, proxy assessment, and bounded reruns |
 
 ## Agent-oriented technical references
 

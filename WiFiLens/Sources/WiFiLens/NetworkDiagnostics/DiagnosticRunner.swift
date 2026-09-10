@@ -1,3 +1,5 @@
+import Foundation
+
 enum DiagnosticCheckRerunPolicy: Equatable, Sendable {
     case networkSensitive
     case configurationOnly
@@ -20,22 +22,99 @@ private struct DiagnosticDependency {
     let blockingStatuses: Set<NetworkDiagnosticStatus>
 }
 
+private struct DiagnosticCheckRunResult: Sendable {
+    let result: NetworkDiagnosticResult?
+    let endReason: DiagnosticRunEndReason?
+}
+
+private final class DiagnosticCheckCompletionGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<DiagnosticCheckRunResult, Never>?
+    private var operation: Task<Void, Never>?
+    private var timeout: Task<Void, Never>?
+    private var didFinish = false
+
+    func install(continuation: CheckedContinuation<DiagnosticCheckRunResult, Never>) {
+        lock.lock()
+        if didFinish {
+            lock.unlock()
+            continuation.resume(returning: .init(result: nil, endReason: .cancelled))
+            return
+        }
+        self.continuation = continuation
+        lock.unlock()
+    }
+
+    func install(
+        operation: Task<Void, Never>,
+        timeout: Task<Void, Never>
+    ) {
+        lock.lock()
+        self.operation = operation
+        self.timeout = timeout
+        let shouldCancel = didFinish
+        lock.unlock()
+        if shouldCancel {
+            operation.cancel()
+            timeout.cancel()
+        }
+    }
+
+    func finish(_ result: DiagnosticCheckRunResult) {
+        lock.lock()
+        guard !didFinish else {
+            lock.unlock()
+            return
+        }
+        didFinish = true
+        let continuation = self.continuation
+        self.continuation = nil
+        let operation = self.operation
+        let timeout = self.timeout
+        self.operation = nil
+        self.timeout = nil
+        lock.unlock()
+
+        operation?.cancel()
+        timeout?.cancel()
+        continuation?.resume(returning: result)
+    }
+
+    func cancel() {
+        finish(.init(result: nil, endReason: .cancelled))
+    }
+}
+
 struct DiagnosticRunner: Sendable {
     let checks: [any DiagnosticCheck]
-    var minimumStepDuration: Duration = .zero
     var sessionBudget: Duration = .seconds(30)
+    var clock: any DiagnosticClock = ContinuousDiagnosticClock()
 
     func run(
+        runID: UUID = UUID(),
         retaining retainedResults: [NetworkDiagnosticResult] = [],
+        deadline: ContinuousClock.Instant? = nil,
+        onCheckStarted: (@Sendable (NetworkDiagnosticCheckID) async -> Void)? = nil,
         onResult: @escaping @Sendable (NetworkDiagnosticResult) async -> Void
-    ) async -> [NetworkDiagnosticResult] {
+    ) async -> DiagnosticRunOutcome {
         var results: [NetworkDiagnosticResult] = []
         let retainedByID = Dictionary(uniqueKeysWithValues: retainedResults.map { ($0.id, $0) })
-        let clock = ContinuousClock()
-        let sessionDeadline = clock.now.advanced(by: sessionBudget)
+        let sessionDeadline: ContinuousClock.Instant = if let deadline {
+            deadline
+        } else {
+            (await clock.now()).advanced(by: sessionBudget)
+        }
+        var endReason: DiagnosticRunEndReason = .completed
 
         for check in checks {
-            guard !Task.isCancelled else { break }
+            guard !Task.isCancelled else {
+                endReason = .cancelled
+                break
+            }
+            guard await clock.now() < sessionDeadline else {
+                endReason = .timedOut
+                break
+            }
             if let retainedResult = retainedByID[check.id] {
                 results.append(retainedResult)
                 continue
@@ -52,42 +131,98 @@ struct DiagnosticRunner: Sendable {
                 await onResult(result)
                 continue
             }
-            let started = clock.now
-            guard let result = await run(check, until: sessionDeadline) else { break }
-            let presentationDeadline = started.advanced(by: minimumStepDuration)
-            try? await clock.sleep(until: min(presentationDeadline, sessionDeadline))
-            guard !Task.isCancelled else { break }
+            await onCheckStarted?(check.id)
+            let checkResult = await run(check, until: sessionDeadline)
+            guard !Task.isCancelled else {
+                endReason = .cancelled
+                break
+            }
+            guard let result = checkResult.result else {
+                endReason = checkResult.endReason ?? .timedOut
+                break
+            }
             results.append(result)
             await onResult(result)
+
+            if let checkEndReason = checkResult.endReason {
+                endReason = checkEndReason
+                break
+            }
+
+            if await clock.now() >= sessionDeadline {
+                endReason = .timedOut
+                break
+            }
         }
 
-        return results
+        if Task.isCancelled {
+            endReason = .cancelled
+        } else if endReason == .completed, results.count < checks.count {
+            endReason = .timedOut
+        }
+        let resultIDs = Set(results.map(\.id))
+        return DiagnosticRunOutcome(
+            runID: runID,
+            results: results,
+            pendingIDs: checks.map(\.id).filter { !resultIDs.contains($0) },
+            endReason: endReason
+        )
     }
 
     private func run(
         _ check: any DiagnosticCheck,
         until deadline: ContinuousClock.Instant
-    ) async -> NetworkDiagnosticResult? {
-        let clock = ContinuousClock()
-        let remaining = clock.now.duration(to: deadline)
-        guard remaining > .zero else { return nil }
-        let task = Task { try await check.run() }
-        return await withTaskGroup(of: NetworkDiagnosticResult?.self) { group in
-            group.addTask {
-                do {
-                    return try await task.value
-                } catch {
-                    return nil
+    ) async -> DiagnosticCheckRunResult {
+        let remaining = (await clock.now()).duration(to: deadline)
+        guard remaining > .zero else {
+            return .init(result: nil, endReason: .timedOut)
+        }
+        let gate = DiagnosticCheckCompletionGate()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                gate.install(continuation: continuation)
+                let operation = Task {
+                    do {
+                        gate.finish(.init(result: try await check.run(), endReason: nil))
+                    } catch {
+                        if Task.isCancelled {
+                            gate.finish(.init(result: nil, endReason: .cancelled))
+                        } else {
+                            gate.finish(.init(
+                                result: NetworkDiagnosticResult(
+                                    id: check.id,
+                                    status: .indeterminate,
+                                    summary: "The check could not complete.",
+                                    evidence: [.init(code: "check.failed", value: nil)]
+                                ),
+                                endReason: nil
+                            ))
+                        }
+                    }
                 }
+                let timeout = Task {
+                    do {
+                        try await clock.sleep(until: deadline)
+                        gate.finish(.init(
+                            result: NetworkDiagnosticResult(
+                                id: check.id,
+                                status: .indeterminate,
+                                summary: String(
+                                    localized: "network_diagnostics.check.timed_out",
+                                    comment: "Network self-check individual check timeout summary"
+                                ),
+                                evidence: [.init(code: "check.timeout", value: nil)]
+                            ),
+                            endReason: .timedOut
+                        ))
+                    } catch {
+                        // The operation completed or the parent cancelled.
+                    }
+                }
+                gate.install(operation: operation, timeout: timeout)
             }
-            group.addTask {
-                try? await clock.sleep(for: remaining)
-                task.cancel()
-                return nil
-            }
-            let result = await group.next() ?? nil
-            group.cancelAll()
-            return result
+        } onCancel: {
+            gate.cancel()
         }
     }
 
@@ -104,10 +239,7 @@ struct DiagnosticRunner: Sendable {
         case .dns:
             [.init(id: .path, blockingStatuses: hardFailureStatuses)]
         case .internet, .ipv6:
-            [
-                .init(id: .path, blockingStatuses: hardFailureStatuses),
-                .init(id: .dns, blockingStatuses: hardFailureStatuses),
-            ]
+            [.init(id: .path, blockingStatuses: hardFailureStatuses)]
         case .proxy:
             [.init(id: .path, blockingStatuses: hardFailureStatuses)]
         }
