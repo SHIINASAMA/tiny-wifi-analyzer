@@ -2,6 +2,22 @@
 
 This file lists third-party data sources bundled with or downloaded by WiFi Lens.
 
+## Swift Packages
+
+### ChartLens
+
+WiFi Lens uses the MIT-licensed [ChartLens](https://github.com/ShiinaLabs/chart-lens) Swift package from ShiinaLabs.
+
+- Pinned revision: `e2e00e5253a51e7031d30cf41015ff146cd9a886`
+- License: [MIT](https://github.com/ShiinaLabs/chart-lens/blob/master/LICENSE)
+
+### SplitView
+
+WiFi Lens uses the MIT-licensed [SplitView](https://github.com/ShiinaLabs/SplitView) Swift package from ShiinaLabs.
+
+- Pinned revision: `7737a80740919c2fa94a6e64f870d37ef77b9b5f`
+- License: [MIT](https://github.com/ShiinaLabs/SplitView/blob/main/LICENSE)
+
 ## MAC Vendor Database (IEEE Registry Data)
 
 WiFi Lens bundles a pre-built MAC address prefix-to-organization mapping derived from the IEEE Standards Association Registration Authority public registries. It also supports runtime download of the same registries.

@@ -9,6 +9,32 @@ struct SpectrumPanelView: View {
     @Binding var selectedNetworkID: String?
     @Binding var sortOrder: [NSSortDescriptor]
     @Binding var hiddenColumns: Set<String>
+    let canRemove: Bool
+    let onRemove: (() -> Void)?
+
+    init(
+        viewModel: ScannerViewModel,
+        panelID: SpectrumPanelID,
+        isVendorColumnAvailable: Bool,
+        band: Binding<ChannelBand>,
+        chartType: Binding<SpectrumPanelViewType>,
+        selectedNetworkID: Binding<String?>,
+        sortOrder: Binding<[NSSortDescriptor]>,
+        hiddenColumns: Binding<Set<String>>,
+        canRemove: Bool = true,
+        onRemove: (() -> Void)? = nil
+    ) {
+        self.viewModel = viewModel
+        self.panelID = panelID
+        self.isVendorColumnAvailable = isVendorColumnAvailable
+        self._band = band
+        self._chartType = chartType
+        self._selectedNetworkID = selectedNetworkID
+        self._sortOrder = sortOrder
+        self._hiddenColumns = hiddenColumns
+        self.canRemove = canRemove
+        self.onRemove = onRemove
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +72,17 @@ struct SpectrumPanelView: View {
             }
 
             Spacer()
+
+            if let onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark.circle")
+                }
+                .buttonStyle(.borderless)
+                .disabled(!canRemove)
+                .help(String(localized: "spectrum.dashboard.remove_panel", comment: "Button to remove a spectrum dashboard panel"))
+                .accessibilityLabel(String(localized: "spectrum.dashboard.remove_panel", comment: "Button to remove a spectrum dashboard panel"))
+                .accessibilityIdentifier("spectrum-dashboard-remove-panel-\(panelID.rawValue)")
+            }
         }
         .frame(minHeight: 24)
         .padding(.horizontal, 8)

@@ -1,13 +1,21 @@
 {
-  "originHash" : "ad43dae66bdbc5e6be55e18bd06bfc9171f8d65a8fd92c68235f6ebba51906d9",
+  "originHash" : "4be5c3732f622cb41fadeaf9a655cf2427581822c4ba85c9f11a7e93b4c2c5fa",
   "pins" : [
+    {
+      "identity" : "chart-lens",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ShiinaLabs/chart-lens.git",
+      "state" : {
+        "revision" : "e2e00e5253a51e7031d30cf41015ff146cd9a886"
+      }
+    },
     {
       "identity" : "eventsource",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mattt/eventsource.git",
       "state" : {
-        "revision" : "e146002f57ea2abbf4803cb58c22a7b5d20395c6",
-        "version" : "1.4.2"
+        "revision" : "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+        "version" : "1.5.1"
       }
     },
     {
@@ -17,6 +25,14 @@
       "state" : {
         "revision" : "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
         "version" : "2.9.6"
+      }
+    },
+    {
+      "identity" : "splitview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ShiinaLabs/SplitView.git",
+      "state" : {
+        "revision" : "ed017042512b9b6a508b240b12eab675c2412aea"
       }
     },
     {
@@ -42,8 +58,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log",
       "state" : {
-        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
-        "version" : "1.15.0"
+        "revision" : "9c6fb14227f55d8f711ce3847dc2f419fb0ecacb",
+        "version" : "1.15.1"
       }
     },
     {
@@ -51,8 +67,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "0b18836bd8b0162e7e17a995a3fbee20ed8f3b2b",
-        "version" : "2.101.3"
+        "revision" : "a931f2c1de8dd49381ce3bf2e279d033f68d8865",
+        "version" : "2.102.0"
       }
     },
     {

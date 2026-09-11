@@ -1,20 +1,32 @@
 import SwiftUI
+import SplitView
+#if os(macOS)
+import AppKit
+#endif
 
 struct SpectrumDashboardLayout {
-    static let panelRatio: CGFloat = 1.0 / 3.0
+    static let minimumPanelFraction: CGFloat = 0.08
 
     let viewportHeight: CGFloat
 
-    var primaryHeight: CGFloat {
-        viewportHeight * Self.panelRatio
+    init(viewportHeight: CGFloat) {
+        self.viewportHeight = viewportHeight
     }
 
-    var secondaryHeight: CGFloat {
-        viewportHeight * Self.panelRatio
+    var primaryHeight: CGFloat { viewportHeight * Self.initialFraction(panelCount: 3) }
+    var secondaryHeight: CGFloat { viewportHeight * Self.initialFraction(panelCount: 3) }
+    var tertiaryHeight: CGFloat { viewportHeight * Self.initialFraction(panelCount: 3) }
+
+    static func normalizedPanelCount(_ count: Int) -> Int {
+        min(max(count, SpectrumDashboardState.minimumPanelCount), SpectrumDashboardState.maximumPanelCount)
     }
 
-    var tertiaryHeight: CGFloat {
-        viewportHeight * Self.panelRatio
+    static func initialFraction(panelCount: Int) -> CGFloat {
+        1.0 / CGFloat(normalizedPanelCount(panelCount))
+    }
+
+    static func splitKey(topID: SpectrumPanelID, bottomID: SpectrumPanelID) -> String {
+        SpectrumDashboardState.boundaryKey(topID: topID, bottomID: bottomID)
     }
 }
 
@@ -23,6 +35,7 @@ struct ContentView: View {
     let isVendorColumnAvailable: Bool
 
     @State private var sortOrder: [NSSortDescriptor] = [NSSortDescriptor(key: "ssid", ascending: true)]
+    @State private var dashboardState = SpectrumDashboardState()
     @AppStorage("hiddenTableColumns") private var hiddenColumnsData: String = ""
 
     private var hiddenColumns: Binding<Set<String>> {
@@ -63,58 +76,59 @@ struct ContentView: View {
     }
 
     private var dashboardContent: some View {
-        GeometryReader { geometry in
-            let layout = SpectrumDashboardLayout(viewportHeight: geometry.size.height)
+        VStack(spacing: 0) {
+            dashboardToolbar
 
-            VStack(spacing: 0) {
+            GeometryReader { _ in
                 if shouldShowEmptyState {
                     emptyState
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    SpectrumPanelContainer(
+                    SpectrumDashboardSplitLayout(
+                        panelDescriptors: dashboardState.panels,
+                        dashboardState: dashboardState,
                         viewModel: viewModel,
-                        panelID: .primary,
                         isVendorColumnAvailable: isVendorColumnAvailable,
-                        defaultViewType: .spectrum,
-                        defaultBand: .band24GHz,
                         selectedNetworkID: $viewModel.selectedNetworkID,
                         sortOrder: $sortOrder,
-                        hiddenColumns: hiddenColumns
+                        hiddenColumns: hiddenColumns,
+                        onRemovePanel: removePanel
                     )
-                    .frame(height: layout.primaryHeight)
-
-                    Divider()
-
-                    SpectrumPanelContainer(
-                        viewModel: viewModel,
-                        panelID: .secondary,
-                        isVendorColumnAvailable: isVendorColumnAvailable,
-                        defaultViewType: .spectrum,
-                        defaultBand: .band5GHz,
-                        selectedNetworkID: $viewModel.selectedNetworkID,
-                        sortOrder: $sortOrder,
-                        hiddenColumns: hiddenColumns
-                    )
-                    .frame(height: layout.secondaryHeight)
-
-                    Divider()
-
-                    SpectrumPanelContainer(
-                        viewModel: viewModel,
-                        panelID: .tertiary,
-                        isVendorColumnAvailable: isVendorColumnAvailable,
-                        defaultViewType: .table,
-                        selectedNetworkID: $viewModel.selectedNetworkID,
-                        sortOrder: $sortOrder,
-                        hiddenColumns: hiddenColumns
-                    )
-                    .frame(height: layout.tertiaryHeight)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .accessibilityIdentifier("spectrum-dashboard")
         .accessibilityElement(children: .contain)
+    }
+
+    private var dashboardToolbar: some View {
+        HStack {
+            Spacer()
+            Button {
+                addPanel()
+            } label: {
+                Label(
+                    String(localized: "spectrum.dashboard.add_panel", comment: "Button to add a spectrum dashboard panel"),
+                    systemImage: "plus"
+                )
+            }
+            .buttonStyle(.borderless)
+            .disabled(dashboardState.panels.count >= SpectrumDashboardState.maximumPanelCount)
+            .accessibilityIdentifier("spectrum-dashboard-add-panel")
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(.bar)
+    }
+
+    private func addPanel() {
+        let defaultBand = viewModel.supportedBands.min { $0.rawValue < $1.rawValue } ?? .band24GHz
+        _ = dashboardState.addPanel(defaultBand: defaultBand)
+    }
+
+    private func removePanel(_ panelID: SpectrumPanelID) {
+        guard dashboardState.removePanel(id: panelID) else { return }
+        viewModel.releasePanelState(for: panelID)
     }
 
     private var shouldShowEmptyState: Bool {
@@ -143,5 +157,120 @@ struct ContentView: View {
             }
             Spacer()
         }
+    }
+}
+
+private struct SpectrumDashboardSplitLayout: View {
+    let panelDescriptors: [SpectrumPanelDescriptor]
+    let dashboardState: SpectrumDashboardState
+    @Bindable var viewModel: ScannerViewModel
+    let isVendorColumnAvailable: Bool
+    @Binding var selectedNetworkID: String?
+    @Binding var sortOrder: [NSSortDescriptor]
+    @Binding var hiddenColumns: Set<String>
+    let onRemovePanel: (SpectrumPanelID) -> Void
+
+    var body: some View {
+        splitNode(panelDescriptors[...])
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func splitNode(_ descriptors: ArraySlice<SpectrumPanelDescriptor>) -> AnyView {
+        guard let first = descriptors.first else { return AnyView(EmptyView()) }
+        guard descriptors.count > 1, let next = descriptors.dropFirst().first else {
+            return AnyView(panelView(for: first))
+        }
+
+        let split = VSplit(
+            top: { panelView(for: first) },
+            bottom: { splitNode(descriptors.dropFirst()) }
+        )
+        .splitter {
+            SpectrumSplitter()
+        }
+        .fraction(
+            dashboardState.fractionHolder(
+                topID: first.id,
+                bottomID: next.id,
+                defaultFraction: SpectrumDashboardLayout.initialFraction(panelCount: descriptors.count)
+            )
+        )
+        .constraints(
+            minPFraction: SpectrumDashboardLayout.minimumPanelFraction,
+            minSFraction: SpectrumDashboardLayout.minimumPanelFraction
+        )
+
+        return AnyView(split)
+    }
+
+    private func panelView(for descriptor: SpectrumPanelDescriptor) -> some View {
+        SpectrumPanelContainer(
+            viewModel: viewModel,
+            descriptor: descriptorBinding(for: descriptor.id),
+            isVendorColumnAvailable: isVendorColumnAvailable,
+            canRemove: panelDescriptors.count > SpectrumDashboardState.minimumPanelCount,
+            selectedNetworkID: $selectedNetworkID,
+            sortOrder: $sortOrder,
+            hiddenColumns: $hiddenColumns,
+            onRemove: { onRemovePanel(descriptor.id) }
+        )
+        .id(descriptor.id)
+    }
+
+    private func descriptorBinding(for id: SpectrumPanelID) -> Binding<SpectrumPanelDescriptor> {
+        Binding(
+            get: {
+                dashboardState.panels.first(where: { $0.id == id })
+                    ?? SpectrumPanelDescriptor(id: id, viewType: .table, band: .band24GHz)
+            },
+            set: { dashboardState.updatePanel($0) }
+        )
+    }
+}
+
+@MainActor
+private struct SpectrumSplitter: SplitDivider {
+    @ObservedObject var styling: SplitStyling
+    @State private var isHovering = false
+
+    init() {
+        styling = SplitStyling(
+            color: .secondary.opacity(0.24),
+            inset: 0,
+            visibleThickness: 1,
+            invisibleThickness: 36
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            Color.clear
+            Rectangle()
+                .fill(isHovering ? Color.accentColor.opacity(0.72) : styling.color)
+                .frame(maxWidth: .infinity)
+                .frame(height: styling.visibleThickness)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: styling.invisibleThickness)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            guard hovering != isHovering else { return }
+            isHovering = hovering
+            updateCursor(isHovering: hovering)
+        }
+        .onDisappear {
+            isHovering = false
+            updateCursor(isHovering: false)
+        }
+    }
+
+    private func updateCursor(isHovering: Bool) {
+        #if os(macOS)
+        if isHovering {
+            NSCursor.resizeUpDown.set()
+        } else {
+            NSCursor.arrow.set()
+        }
+        #endif
     }
 }

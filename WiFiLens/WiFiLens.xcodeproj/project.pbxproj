@@ -351,6 +351,7 @@
 		FB6F41D12FC4889B0009F29B /* RegionInferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6F41C72FC4889B0009F29B /* RegionInferenceEngine.swift */; };
 		FB6F41D32FC4889B0009F29B /* RegulatoryPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6F41D22FC4889B0009F29B /* RegulatoryPipeline.swift */; };
 		FB85B8A92FE6526D00D2D391 /* ChartLens in Frameworks */ = {isa = PBXBuildFile; productRef = FB85B8A82FE6526D00D2D391 /* ChartLens */; };
+		C0A7A1B2C3D4E5F678900010 /* SplitView in Frameworks */ = {isa = PBXBuildFile; productRef = C0A7A1B2C3D4E5F678900003 /* SplitView */; };
 		FB8BB6022FBB07F600FD072E /* NetworkInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB8BB6012FBB07F600FD072E /* NetworkInfoService.swift */; };
 		FB8BB6042FBB0BA600FD072E /* IEParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB8BB6032FBB0BA600FD072E /* IEParser.swift */; };
 		FB8FCB212FF6C5DF00BB2929 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = FB8FCB202FF6C5DF00BB2929 /* Sparkle */; };
@@ -377,6 +378,7 @@
 		FBB2CA8D2FC0E14000FC2D2C /* TitleBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB2CA8C2FC0E14000FC2D2C /* TitleBadge.swift */; };
 		FBB2CA8E2FC0E14000FC2D2C /* BuildConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB2CA8B2FC0E14000FC2D2C /* BuildConfig.swift */; };
 		FBBD0F912FE78D5A0027958D /* ChartLens in Frameworks */ = {isa = PBXBuildFile; productRef = FBBD0F902FE78D5A0027958D /* ChartLens */; };
+		C0A7A1B2C3D4E5F678900011 /* SplitView in Frameworks */ = {isa = PBXBuildFile; productRef = C0A7A1B2C3D4E5F678900004 /* SplitView */; };
 		FBBD16992FD062F60093F940 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FBBD16982FD062F60093F940 /* PrivacyInfo.xcprivacy */; };
 		FBBD169A2FD062F60093F940 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FBBD16982FD062F60093F940 /* PrivacyInfo.xcprivacy */; };
 		FBBD169C2FD063630093F940 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FBBD169B2FD063630093F940 /* Assets.xcassets */; };
@@ -1014,6 +1016,7 @@
 				B9AB60F3D002A7B9123D2520 /* CoreLocation.framework in Frameworks */,
 				FB0573B42FBBEAE4005F8214 /* MCP in Frameworks */,
 				FB85B8A92FE6526D00D2D391 /* ChartLens in Frameworks */,
+				C0A7A1B2C3D4E5F678900010 /* SplitView in Frameworks */,
 				FB2E3B2E2FC5ACDA00D2610E /* CoreBluetooth.framework in Frameworks */,
 				FB0573C422FBBEAE4005F8214 /* Logging in Frameworks */,
 			);
@@ -1025,6 +1028,7 @@
 			files = (
 				FB1E32972FC7316C009D1BDC /* CoreWLAN.framework in Frameworks */,
 				FBBD0F912FE78D5A0027958D /* ChartLens in Frameworks */,
+				C0A7A1B2C3D4E5F678900011 /* SplitView in Frameworks */,
 				FB1E32982FC7316C009D1BDC /* CoreLocation.framework in Frameworks */,
 				FB1E32992FC7316C009D1BDC /* MCP in Frameworks */,
 				FB1E329A2FC7316C009D1BDC /* CoreBluetooth.framework in Frameworks */,
@@ -1927,6 +1931,7 @@
 				FB0573B32FBBEAE4005F8214 /* MCP */,
 				FB0573C412FBBEAE4005F8214 /* Logging */,
 				FB85B8A82FE6526D00D2D391 /* ChartLens */,
+				C0A7A1B2C3D4E5F678900003 /* SplitView */,
 				FB8FCB202FF6C5DF00BB2929 /* Sparkle */,
 			);
 			productName = WiFiLens;
@@ -1953,6 +1958,7 @@
 				FB1E32432FC7316C009D1BDC /* MCP */,
 				FB1E32452FC7316C009D1BDC /* Logging */,
 				FBBD0F902FE78D5A0027958D /* ChartLens */,
+				C0A7A1B2C3D4E5F678900004 /* SplitView */,
 			);
 			productName = WiFiLens;
 			productReference = FB1E32A42FC7316C009D1BDC /* WiFi Lens Pro.app */;
@@ -2056,7 +2062,8 @@
 			packageReferences = (
 				FB0573B22FBBEAE4005F8214 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 				FB0573C402FBBEAE4005F8214 /* XCRemoteSwiftPackageReference "swift-log" */,
-				FB85B8A72FE6526D00D2D391 /* XCLocalSwiftPackageReference "../ChartLens" */,
+				C0A7A1B2C3D4E5F678900001 /* XCRemoteSwiftPackageReference "chart-lens" */,
+				C0A7A1B2C3D4E5F678900002 /* XCRemoteSwiftPackageReference "SplitView" */,
 				FB8FCB1F2FF6C5DF00BB2929 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -3319,13 +3326,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		FB85B8A72FE6526D00D2D391 /* XCLocalSwiftPackageReference "../ChartLens" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../ChartLens;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		FB0573B22FBBEAE4005F8214 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -3340,7 +3340,7 @@
 			repositoryURL = "https://github.com/apple/swift-log";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.15.0;
+				minimumVersion = 1.15.1;
 			};
 		};
 		FB1E32442FC7316C009D1BDC /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
@@ -3356,7 +3356,7 @@
 			repositoryURL = "https://github.com/apple/swift-log";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.15.0;
+				minimumVersion = 1.15.1;
 			};
 		};
 		FB8FCB1F2FF6C5DF00BB2929 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
@@ -3365,6 +3365,22 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.9.6;
+			};
+		};
+		C0A7A1B2C3D4E5F678900001 /* XCRemoteSwiftPackageReference "chart-lens" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ShiinaLabs/chart-lens.git";
+			requirement = {
+				kind = revision;
+				revision = e2e00e5253a51e7031d30cf41015ff146cd9a886;
+			};
+		};
+		C0A7A1B2C3D4E5F678900002 /* XCRemoteSwiftPackageReference "SplitView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ShiinaLabs/SplitView.git";
+			requirement = {
+				kind = revision;
+				revision = ed017042512b9b6a508b240b12eab675c2412aea;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -3392,7 +3408,13 @@
 		};
 		FB85B8A82FE6526D00D2D391 /* ChartLens */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = C0A7A1B2C3D4E5F678900001 /* XCRemoteSwiftPackageReference "chart-lens" */;
 			productName = ChartLens;
+		};
+		C0A7A1B2C3D4E5F678900003 /* SplitView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A7A1B2C3D4E5F678900002 /* XCRemoteSwiftPackageReference "SplitView" */;
+			productName = SplitView;
 		};
 		FB8FCB202FF6C5DF00BB2929 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -3401,8 +3423,13 @@
 		};
 		FBBD0F902FE78D5A0027958D /* ChartLens */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FB85B8A72FE6526D00D2D391 /* XCLocalSwiftPackageReference "../ChartLens" */;
+			package = C0A7A1B2C3D4E5F678900001 /* XCRemoteSwiftPackageReference "chart-lens" */;
 			productName = ChartLens;
+		};
+		C0A7A1B2C3D4E5F678900004 /* SplitView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A7A1B2C3D4E5F678900002 /* XCRemoteSwiftPackageReference "SplitView" */;
+			productName = SplitView;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

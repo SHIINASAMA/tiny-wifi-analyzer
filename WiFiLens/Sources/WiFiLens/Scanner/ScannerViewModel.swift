@@ -171,11 +171,7 @@ final class ScannerViewModel {
 
     var allBandViewModels: [BandChartViewModel] {
         var result = bandViewModels
-        for panel in SpectrumPanelID.allCases {
-            if let byBand = panelBandViewModelsByID[panel] {
-                result.append(contentsOf: Array(byBand.values))
-            }
-        }
+        result.append(contentsOf: panelBandViewModelsByID.values.flatMap { $0.values })
         return result
     }
 
@@ -211,6 +207,11 @@ final class ScannerViewModel {
     func setFilterQuery(_ query: String, for panelID: SpectrumPanelID) {
         panelFilterQueries[panelID] = query
         refreshPanelBandViewModels(panelID)
+    }
+
+    func releasePanelState(for panelID: SpectrumPanelID) {
+        panelFilterQueries.removeValue(forKey: panelID)
+        panelBandViewModelsByID.removeValue(forKey: panelID)
     }
 
     func panelBandViewModels(for panelID: SpectrumPanelID) -> [BandChartViewModel] {
@@ -795,6 +796,30 @@ final class ScannerViewModel {
         )
     }
 
+    private func refreshAllPanelBandViewModels() {
+        let networks = deduplicatedNetworks
+        refreshAllPanelBandViewModels(
+            with: networks,
+            trends: makeTrends(for: networks),
+            snapshots: makeSnapshots(for: networks)
+        )
+    }
+
+    private func refreshAllPanelBandViewModels(
+        with networks: [WiFiNetwork],
+        trends: [String: (direction: TrendDirection, delta: Int)],
+        snapshots: [String: [NetworkSnapshot]]
+    ) {
+        for panelID in panelBandViewModelsByID.keys {
+            refreshBandViewModels(
+                for: panelID,
+                with: networks,
+                trends: trends,
+                snapshots: snapshots
+            )
+        }
+    }
+
     private func automaticVisibility(for network: WiFiNetwork) -> Bool {
         if hiddenBSSIDs.contains(network.bssid) {
             return false
@@ -872,9 +897,7 @@ final class ScannerViewModel {
         if supportedBands.contains(.band6GHz) {
             band6.updateNetworks(sorted6, colorHasher: colorHasher, filterQuery: globalFilterQuery, trends: trends, snapshots: snapshotDict, hiddenBSSIDs: hiddenBSSIDs, hiddenBands: hiddenBands, hideHiddenSSIDs: hideHiddenSSIDs)
         }
-        refreshBandViewModels(for: .primary, with: deduped, trends: trends, snapshots: snapshotDict)
-        refreshBandViewModels(for: .secondary, with: deduped, trends: trends, snapshots: snapshotDict)
-        refreshBandViewModels(for: .tertiary, with: deduped, trends: trends, snapshots: snapshotDict)
+        refreshAllPanelBandViewModels(with: deduped, trends: trends, snapshots: snapshotDict)
 
         // Validate selected network still exists in the new scan
         if let selectedID = selectedNetworkID {
@@ -897,9 +920,7 @@ final class ScannerViewModel {
         band5.applyFilter(globalFilterQuery, hiddenBands: hiddenBands, hideHiddenSSIDs: hideHiddenSSIDs)
         band6.applyFilter(globalFilterQuery, hiddenBands: hiddenBands, hideHiddenSSIDs: hideHiddenSSIDs)
         displayStatesByID = recomputeDisplayStates(for: deduplicatedNetworks)
-        refreshPanelBandViewModels(.primary)
-        refreshPanelBandViewModels(.secondary)
-        refreshPanelBandViewModels(.tertiary)
+        refreshAllPanelBandViewModels()
         rebuildCachedDerivedData()
     }
 
@@ -909,9 +930,7 @@ final class ScannerViewModel {
             visibility: !current.visibility,
             visibilityLocked: current.visibilityLocked
         )
-        refreshPanelBandViewModels(.primary)
-        refreshPanelBandViewModels(.secondary)
-        refreshPanelBandViewModels(.tertiary)
+        refreshAllPanelBandViewModels()
         rebuildCachedDerivedData()
     }
 
@@ -921,9 +940,7 @@ final class ScannerViewModel {
             visibility: current.visibility,
             visibilityLocked: !current.visibilityLocked
         )
-        refreshPanelBandViewModels(.primary)
-        refreshPanelBandViewModels(.secondary)
-        refreshPanelBandViewModels(.tertiary)
+        refreshAllPanelBandViewModels()
         rebuildCachedDerivedData()
     }
 

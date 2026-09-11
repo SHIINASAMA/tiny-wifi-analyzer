@@ -6,6 +6,7 @@ This directory contains project documentation for human maintainers and agents.
 
 | File | Purpose |
 |------|---------|
+| [2026-09-10-homebrew-tap.md](superpowers/plans/2026-09-10-homebrew-tap.md) | Implementation plan for the organization-owned Homebrew Tap and coordinated updates |
 | [TODO.md](TODO.md) | Planned features, engineering work, and product directions |
 | [ISSUES.md](ISSUES.md) | Current known defects, regressions, and deferred items |
 | [2026-09-02-aggregate-spectrum-heatmap.md](superpowers/plans/2026-09-02-aggregate-spectrum-heatmap.md) | Implementation plan for the aggregate Spectrum Heatmap |
@@ -21,6 +22,7 @@ context.
 
 | File | Purpose |
 |------|---------|
+| [2026-09-10-homebrew-tap-design.md](superpowers/specs/2026-09-10-homebrew-tap-design.md) | Homebrew Tap structure and Sparkle/Homebrew update coordination |
 | [2026-09-02-aggregate-spectrum-heatmap-design.md](superpowers/specs/2026-09-02-aggregate-spectrum-heatmap-design.md) | Aggregate current-scan Heatmap using shared Spectrum envelopes |
 | [2026-09-09-network-diagnostics-hardening-design.md](superpowers/specs/2026-09-09-network-diagnostics-hardening-design.md) | Proposed network self-check fixes for route selection, partial reports, proxy assessment, and bounded reruns |
 

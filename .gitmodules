@@ -1,6 +1,3 @@
 [submodule "Pro"]
 	path = Pro
 	url = https://github.com/SHIINASAMA/wifi-lens-pro.git
-[submodule "ChartLens"]
-	path = ChartLens
-	url = https://github.com/SHIINASAMA/chart-lens.git

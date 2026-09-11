@@ -2,62 +2,58 @@ import SwiftUI
 
 struct SpectrumPanelContainer: View {
     let viewModel: ScannerViewModel
-    let panelID: SpectrumPanelID
+    @Binding var descriptor: SpectrumPanelDescriptor
     let isVendorColumnAvailable: Bool
-    let defaultViewType: SpectrumPanelViewType
+    let canRemove: Bool
     @Binding var selectedNetworkID: String?
     @Binding var sortOrder: [NSSortDescriptor]
     @Binding var hiddenColumns: Set<String>
-    @State private var viewType: SpectrumPanelViewType
-    @State private var band: ChannelBand
+    let onRemove: () -> Void
 
     init(
         viewModel: ScannerViewModel,
-        panelID: SpectrumPanelID,
+        descriptor: Binding<SpectrumPanelDescriptor>,
         isVendorColumnAvailable: Bool,
-        defaultViewType: SpectrumPanelViewType,
-        defaultBand: ChannelBand? = nil,
+        canRemove: Bool,
         selectedNetworkID: Binding<String?>,
         sortOrder: Binding<[NSSortDescriptor]>,
-        hiddenColumns: Binding<Set<String>>
+        hiddenColumns: Binding<Set<String>>,
+        onRemove: @escaping () -> Void
     ) {
         self.viewModel = viewModel
-        self.panelID = panelID
+        self._descriptor = descriptor
         self.isVendorColumnAvailable = isVendorColumnAvailable
-        self.defaultViewType = defaultViewType
+        self.canRemove = canRemove
         self._selectedNetworkID = selectedNetworkID
         self._sortOrder = sortOrder
         self._hiddenColumns = hiddenColumns
-        self._viewType = State(initialValue: defaultViewType)
-        self._band = State(initialValue: Self.initialBand(
-            preferredBand: defaultBand,
-            supportedBands: viewModel.supportedBands
-        ))
+        self.onRemove = onRemove
     }
 
     var body: some View {
         SpectrumPanelView(
             viewModel: viewModel,
-            panelID: panelID,
+            panelID: descriptor.id,
             isVendorColumnAvailable: isVendorColumnAvailable,
-            band: $band,
-            chartType: $viewType,
+            band: $descriptor.band,
+            chartType: $descriptor.viewType,
             selectedNetworkID: $selectedNetworkID,
             sortOrder: $sortOrder,
-            hiddenColumns: $hiddenColumns
+            hiddenColumns: $hiddenColumns,
+            canRemove: canRemove,
+            onRemove: onRemove
         )
+        .onAppear(perform: normalizeBand)
+        .onChange(of: viewModel.supportedBands) { _, _ in normalizeBand() }
     }
 
-    private static func initialBand(
-        preferredBand: ChannelBand?,
-        supportedBands: Set<ChannelBand>
-    ) -> ChannelBand {
-        let preferredBand = preferredBand
-
-        if let preferredBand, supportedBands.contains(preferredBand) {
-            return preferredBand
+    private func normalizeBand() {
+        guard !viewModel.supportedBands.isEmpty,
+              !viewModel.supportedBands.contains(descriptor.band),
+              let replacement = viewModel.supportedBands.min(by: { $0.rawValue < $1.rawValue }) else {
+            return
         }
 
-        return supportedBands.min { $0.rawValue < $1.rawValue } ?? .band24GHz
+        descriptor.band = replacement
     }
 }
