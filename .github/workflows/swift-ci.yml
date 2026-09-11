@@ -9,7 +9,6 @@ on:
       - ".github/workflows/release.yml"
       - ".gitmodules"
       - "WiFiLens/**"
-      - "ChartLens/**"
       - "wifi-lens.xcworkspace/**"
       - "scripts/create-dmg.sh"
       - "assets/**"
@@ -19,7 +18,6 @@ on:
       - ".github/workflows/release.yml"
       - ".gitmodules"
       - "WiFiLens/**"
-      - "ChartLens/**"
       - "wifi-lens.xcworkspace/**"
       - "scripts/create-dmg.sh"
       - "assets/**"
@@ -39,9 +37,6 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v7
-
-      - name: Init ChartLens submodule
-        run: git submodule update --init ChartLens
 
       - name: Build
         run: |

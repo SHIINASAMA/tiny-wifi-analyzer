@@ -8,7 +8,6 @@ on:
       - ".github/workflows/codeql.yml"
       - ".gitmodules"
       - "WiFiLens/**"
-      - "ChartLens/**"
       - "wifi-lens.xcworkspace/**"
       - "web/**"
 
@@ -19,7 +18,6 @@ on:
       - ".github/workflows/codeql.yml"
       - ".gitmodules"
       - "WiFiLens/**"
-      - "ChartLens/**"
       - "wifi-lens.xcworkspace/**"
       - "web/**"
 
@@ -74,9 +72,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - name: Initialize ChartLens submodule
-        run: git submodule update --init ChartLens
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4.37.9

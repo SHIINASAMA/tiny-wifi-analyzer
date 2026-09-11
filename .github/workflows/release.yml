@@ -70,9 +70,6 @@ jobs:
 
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Init ChartLens submodule
-        run: git submodule update --init ChartLens
-
       - name: Import Developer ID Certificate
         run: |
           CERT_PATH="$RUNNER_TEMP/developer-id.p12"
